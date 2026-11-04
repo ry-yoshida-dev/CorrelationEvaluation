@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar, override
 
 import numpy as np
+from data_scaler import ScalingKind
 
 from ...metric import CorrelationMetric
 from ...parameter_validator import ParameterValidator
@@ -25,6 +26,12 @@ class Intraclass(CorrelationMetric):
     form: IntraclassForm = IntraclassForm.TWO_WAY_RANDOM
 
     is_unit_bounded: ClassVar[bool] = False
+    allowed_scaling_kinds: ClassVar[frozenset[ScalingKind]] = frozenset(
+        {ScalingKind.IDENTITY}
+    )
+    scaling_restriction: ClassVar[str] = (
+        "scaling x and y separately would hide the differences it detects"
+    )
 
     def __post_init__(self) -> None:
         ParameterValidator.require_members(IntraclassForm, form=self.form)

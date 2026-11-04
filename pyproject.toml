@@ -18,6 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "data-scaler @ git+https://github.com/ry-yoshida-dev/DataScaler.git@13edc913fa2ea4da434455b62cf448c9af66a741",
     "numpy>=2.0",
     "scikit-learn>=1.8",
     "scipy>=1.15",
@@ -42,6 +43,10 @@ mypy_path = "stubs:src"
 files = ["src", "tests"]
 explicit_package_bases = true
 strict = true
+
+[[tool.mypy.overrides]]
+module = "data_scaler.*"
+follow_imports = "silent"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

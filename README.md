@@ -111,9 +111,36 @@ print(CramersV(is_bias_corrected=True).evaluate(colors, sizes).statistic)
 print(TheilsU().evaluate(colors, sizes).statistic)
 ```
 
+Scale the variables first with a method of [DataScaler](https://github.com/ry-yoshida-dev/DataScaler). A method that would change what the metric measures raises `ValueError`, which lists the supported kinds:
+
+```python
+from correlation_evaluation import DistanceCorrelation, LinConcordance
+from data_scaler import FeatureScaling, RobustScalingParameters
+
+metric = DistanceCorrelation()
+print(metric.evaluate_with_scaling(X, Y, FeatureScaling.STANDARD).statistic)
+print(
+    metric.evaluate_with_scaling(
+        X, Y, RobustScalingParameters(quantile_range=(10.0, 90.0))
+    ).statistic
+)
+print(LinConcordance.supported_scaling_kinds())  # frozenset({ScalingKind.IDENTITY})
+```
+
+| Metric | `IDENTITY` | `PROPORTIONAL` | `AFFINE` | `MONOTONIC` | `SAMPLE_WISE` |
+| --- | --- | --- | --- | --- | --- |
+| `LinConcordance`, `Intraclass` | ✔ | ✗ | ✗ | ✗ | ✗ |
+| `Cosine` | ✔ | ✔ | ✗ | ✗ | ✗ |
+| Other metrics of one-dimensional numeric variables | ✔ | ✔ | ✔ | ✔ | ✗ |
+| Metrics of multivariate variables | ✔ | ✔ | ✔ | ✔ | ✔ |
+
+`FeatureScaling` and every parameter class of DataScaler report their kind as `kind`. Metrics of labels only take no scaling.
+
 ## Notes
 
 - A statistic is `None` when the metric is undefined for the data, rather than a misleading number: for a constant variable, except for `Cosine`, `MutualInformation`, and `CohenKappa`, where a constant has a meaningful value, and for too few samples. In matrices it is NaN.
+- `evaluate` never scales its input. `DistanceCorrelation`, `HilbertSchmidt`, `MultiscaleGraph`, and `RVCoefficient` compare columns on their raw scale, so a column in large units can dominate the value; use `evaluate_with_scaling` when such differences are only a matter of units. It scales x, y, and the covariates of `Partial` and `Semipartial` separately, and leaves labels as they are.
+- `evaluate_with_scaling` rejects what would change the meaning of a metric: separate scaling removes what `LinConcordance` and `Intraclass` detect, centering makes `Cosine` a Pearson correlation, and a sample-wise method such as `FeatureScaling.UNIT_NORM` leaves only the sign of a one-dimensional variable. To compare two raters on a common scale, fit one scaler on both yourself. Which accepted method suits the data remains your decision; for example, no method fully corrects an extreme outlier, so deal with outliers first.
 - `p_value` and `confidence_interval` are `None` when the metric has no established closed-form test. A permutation test is the general alternative.
 - NaN or infinite input raises `ValueError`; remove missing values first, because no single policy suits all metrics.
 - Labels may be integers, floats, booleans, or strings, including object arrays such as pandas string columns. Object arrays must hold one type, so missing values raise an error. Ordinal metrics order them by sort order, so name them so that it matches their meaning; for example, the strings `"10"` and `"9"` sort in the wrong order.

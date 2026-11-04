@@ -1,6 +1,7 @@
 from enum import Enum
 
 import numpy as np
+from data_scaler import ScalingKind
 from numpy.typing import ArrayLike, NDArray
 
 from .types import FloatArray
@@ -26,6 +27,44 @@ class VariableKind(Enum):
     MULTIVARIATE = "multivariate"
     BINARY = "binary"
     CATEGORICAL = "categorical"
+
+    @property
+    def is_numeric(self) -> bool:
+        """
+        Get whether this kind holds numbers rather than labels.
+
+        Returns
+        -------
+        bool
+            True for NUMERIC and MULTIVARIATE.
+        """
+        match self:
+            case VariableKind.NUMERIC | VariableKind.MULTIVARIATE:
+                return True
+            case VariableKind.BINARY | VariableKind.CATEGORICAL:
+                return False
+
+    @property
+    def supported_scaling_kinds(self) -> frozenset[ScalingKind]:
+        """
+        Get the kinds of scaling that keep a variable of this kind meaningful.
+
+        Returns
+        -------
+        frozenset[ScalingKind]
+            All kinds, except that sample-wise scaling would leave only the sign of
+            each NUMERIC value. Labels are not scaled, so any kind leaves them as
+            they are.
+        """
+        match self:
+            case VariableKind.NUMERIC:
+                return frozenset(ScalingKind) - {ScalingKind.SAMPLE_WISE}
+            case (
+                VariableKind.MULTIVARIATE
+                | VariableKind.BINARY
+                | VariableKind.CATEGORICAL
+            ):
+                return frozenset(ScalingKind)
 
     def encode(self, values: ArrayLike, name: str) -> FloatArray:
         """

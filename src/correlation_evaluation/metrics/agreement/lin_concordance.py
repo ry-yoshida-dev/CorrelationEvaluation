@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import override
+from typing import ClassVar, override
 
 import numpy as np
+from data_scaler import ScalingKind
 
 from ...metric import CorrelationMetric
 from ...result import CorrelationResult
@@ -14,6 +15,13 @@ class LinConcordance(CorrelationMetric):
     Lin's concordance correlation, the agreement of two measurements with the
     identity line. Unlike Pearson's correlation, it penalizes shifts and rescaling.
     """
+
+    allowed_scaling_kinds: ClassVar[frozenset[ScalingKind]] = frozenset(
+        {ScalingKind.IDENTITY}
+    )
+    scaling_restriction: ClassVar[str] = (
+        "scaling x and y separately would hide the differences it detects"
+    )
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import override
+from dataclasses import dataclass, field, replace
+from typing import Self, override
 
 import numpy as np
 from scipy import stats
 
 from ...metric import CorrelationMetric
 from ...result import CorrelationResult
-from ...types import FloatArray
+from ...types import FloatArray, ScalingMethod
 from ...variable_kind import VariableKind
 
 
@@ -36,6 +36,17 @@ class CovariateAdjusted(CorrelationMetric, ABC):
             self,
             "covariates",
             VariableKind.MULTIVARIATE.encode(self.covariates, "covariates"),
+        )
+
+    @override
+    def _with_scaled_data(self, scaling: ScalingMethod) -> Self:
+        # A nonlinear method would otherwise change how x and y relate to the
+        # covariates, so that removing them no longer removes their effect.
+        return replace(
+            self,
+            covariates=scaling.build_scaler()
+            .fit_transform(self.covariates)
+            .astype(np.float64),
         )
 
     @override
