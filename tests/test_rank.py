@@ -4,9 +4,12 @@ from itertools import combinations
 import numpy as np
 import pytest
 from numpy.typing import NDArray
+from scipy import stats
 
 from correlation_evaluation import (
+    Alternative,
     BlomqvistBeta,
+    CorrelationResult,
     GoodmanKruskalGamma,
     KendallTau,
     KendallVariant,
@@ -111,3 +114,44 @@ def test_normal_scores_ignores_monotonic_transforms() -> None:
     assert NormalScores().evaluate(np.exp(x), y).statistic == pytest.approx(
         NormalScores().evaluate(x, y).statistic
     )
+
+
+@pytest.mark.parametrize("alternative", list(Alternative))
+@pytest.mark.parametrize("num_levels", [2, 4, 30])
+def test_somers_d_matches_scipy(alternative: Alternative, num_levels: int) -> None:
+    for seed in range(5):
+        rng: np.random.Generator = np.random.default_rng(seed)
+        x: NDArray[np.int64] = rng.integers(0, num_levels, 40)
+        y: NDArray[np.int64] = x + rng.integers(0, num_levels, 40)
+        expected = stats.somersd(x, y, alternative=alternative.option_name)
+        result: CorrelationResult = SomersD(alternative=alternative).evaluate(x, y)
+        assert result.statistic == pytest.approx(float(expected.statistic))
+        assert result.p_value == pytest.approx(float(expected.pvalue))
+
+
+@pytest.mark.parametrize(
+    ("alternative", "p_value"),
+    [(Alternative.TWO_SIDED, 0.0), (Alternative.GREATER, 0.0), (Alternative.LESS, 1.0)],
+)
+def test_somers_d_perfect_relationship_has_a_limit_p_value(
+    alternative: Alternative, p_value: float
+) -> None:
+    result: CorrelationResult = SomersD(alternative=alternative).evaluate(
+        [1, 2, 3, 4], [1, 2, 3, 4]
+    )
+    assert result.statistic == pytest.approx(1.0)
+    assert result.p_value == pytest.approx(p_value)
+
+
+def test_somers_d_without_any_spread_of_scores_has_no_p_value() -> None:
+    result: CorrelationResult = SomersD().evaluate([0, 1, 1, 1, 2], [1, 0, 1, 2, 1])
+    assert result.statistic == pytest.approx(0.0)
+    assert result.p_value is None
+
+
+def test_somers_d_without_ties_equals_kendall_tau_beyond_one_chunk() -> None:
+    rng: np.random.Generator = np.random.default_rng(0)
+    x: NDArray[np.float64] = rng.standard_normal(3000)
+    y: NDArray[np.float64] = x + rng.standard_normal(3000)
+    statistic: float | None = SomersD().evaluate(x, y).statistic
+    assert statistic == pytest.approx(KendallTau().evaluate(x, y).statistic, abs=1e-9)

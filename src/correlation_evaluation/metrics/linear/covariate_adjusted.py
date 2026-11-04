@@ -5,6 +5,7 @@ from typing import Self, override
 import numpy as np
 from scipy import stats
 
+from ...computation import ColumnSpace
 from ...metric import CorrelationMetric
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
@@ -19,7 +20,8 @@ class CovariateAdjusted(CorrelationMetric, ABC):
 
     The p-value tests whether x and y are related given the covariates, through
     the partial correlation. Undefined when no degrees of freedom remain, where a
-    partial correlation is always 1 in magnitude. Collinear covariates count once.
+    partial correlation is always 1 in magnitude. Collinear covariates count once,
+    and the units and offsets of covariates do not affect the value.
     Metrics compare by identity, because they hold an array.
 
     Attributes
@@ -67,12 +69,13 @@ class CovariateAdjusted(CorrelationMetric, ABC):
             x = stats.rankdata(x)
             y = stats.rankdata(y)
             covariates = stats.rankdata(covariates, axis=0)
-        num_covariates: int = self._count_independent_columns(covariates)
+        basis: FloatArray = ColumnSpace.orthonormal_basis(covariates)
+        num_covariates: int = np.size(basis, axis=1)
         degrees_of_freedom: int = x.size - num_covariates - 2
         if degrees_of_freedom <= 0:
             return CorrelationResult(statistic=None)
-        residual_x: FloatArray = self._residualize(x, covariates)
-        residual_y: FloatArray = self._residualize(y, covariates)
+        residual_x: FloatArray = self._residualize(x, basis)
+        residual_y: FloatArray = self._residualize(y, basis)
         adjusted_x: FloatArray = self._adjust_x(x, residual_x)
         if self._is_negligible(adjusted_x, x) or self._is_negligible(residual_y, y):
             return CorrelationResult(statistic=None)
@@ -105,20 +108,9 @@ class CovariateAdjusted(CorrelationMetric, ABC):
         """
 
     @staticmethod
-    def _design(covariates: FloatArray) -> FloatArray:
-        return np.column_stack([np.ones(np.size(covariates, axis=0)), covariates])
-
-    @classmethod
-    def _count_independent_columns(cls, covariates: FloatArray) -> int:
-        # The rank of the residualizing solver; its intercept absorbs a constant.
-        design: FloatArray = cls._design(covariates)
-        return int(np.linalg.lstsq(design, np.zeros(np.size(design, axis=0)))[2]) - 1
-
-    @classmethod
-    def _residualize(cls, values: FloatArray, covariates: FloatArray) -> FloatArray:
-        design: FloatArray = cls._design(covariates)
-        coefficients: FloatArray = np.linalg.lstsq(design, values)[0]
-        return values - design @ coefficients
+    def _residualize(values: FloatArray, basis: FloatArray) -> FloatArray:
+        centered: FloatArray = values - values.mean()
+        return centered - basis @ (basis.T @ centered)
 
     @staticmethod
     def _is_negligible(residuals: FloatArray, values: FloatArray) -> bool:

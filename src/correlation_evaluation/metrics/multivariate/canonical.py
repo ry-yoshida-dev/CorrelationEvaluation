@@ -1,9 +1,9 @@
-import sys
 from dataclasses import dataclass
 from typing import ClassVar, override
 
 import numpy as np
 
+from ...computation import ColumnSpace
 from ...metric import CorrelationMetric
 from ...result import CorrelationResult
 from ...types import FloatArray
@@ -27,22 +27,11 @@ class Canonical(CorrelationMetric):
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
         if x.shape[0] <= x.shape[1] + y.shape[1]:
             return CorrelationResult(statistic=None)
+        basis_x: FloatArray = ColumnSpace.orthonormal_basis(x)
+        basis_y: FloatArray = ColumnSpace.orthonormal_basis(y)
+        if basis_x.size == 0 or basis_y.size == 0:
+            return CorrelationResult(statistic=None)
         singular_values: FloatArray = np.linalg.svd(
-            self._orthonormal_basis(x).T @ self._orthonormal_basis(y),
-            compute_uv=False,
+            basis_x.T @ basis_y, compute_uv=False
         )
         return CorrelationResult(statistic=float(np.max(singular_values)))
-
-    @staticmethod
-    def _orthonormal_basis(values: FloatArray) -> FloatArray:
-        left: FloatArray
-        singular_values: FloatArray
-        left, singular_values, _ = np.linalg.svd(
-            values - values.mean(axis=0), full_matrices=False
-        )
-        tolerance: float = (
-            float(np.max(singular_values))
-            * max(np.size(values, axis=0), np.size(values, axis=1))
-            * sys.float_info.epsilon
-        )
-        return left[:, singular_values > tolerance]

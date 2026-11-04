@@ -9,4 +9,5 @@ Numerical building blocks that metrics share or rely on, with no knowledge of th
 | Component | Description |
 |-----------|-------------|
 | [bivariate_normal.py](./bivariate_normal.py) | `BivariateNormal`, the distribution function behind latent likelihoods. |
+| [column_space.py](./column_space.py) | `ColumnSpace`, the unit-independent span of data columns. |
 | [pairwise_distance.py](./pairwise_distance.py) | `PairwiseDistance`, shared distance and centering operations. |

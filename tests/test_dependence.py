@@ -188,3 +188,34 @@ def test_nearest_neighbor_mutual_information_fewer_samples_than_neighbors_is_und
         num_neighbors=5
     )
     assert metric.evaluate([1, 2, 3, 4], [1, 3, 2, 4]).statistic is None
+
+
+def test_chatterjee_xi_tied_x_ignores_the_order_of_the_samples() -> None:
+    x: NDArray[np.float64] = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+    first: float | None = ChatterjeeXi().evaluate(x, [1, 2, 3, 4, 5, 6]).statistic
+    second: float | None = ChatterjeeXi().evaluate(x, [3, 1, 2, 6, 4, 5]).statistic
+    assert first == pytest.approx(second)
+
+
+def test_chatterjee_xi_without_ties_does_not_depend_on_the_seed() -> None:
+    rng: np.random.Generator = np.random.default_rng(0)
+    x: NDArray[np.float64] = rng.standard_normal(40)
+    y: NDArray[np.float64] = x + rng.standard_normal(40)
+    assert ChatterjeeXi(random_state=1).evaluate(x, y).statistic == pytest.approx(
+        ChatterjeeXi(random_state=2).evaluate(x, y).statistic
+    )
+
+
+def test_chatterjee_xi_tied_x_breaks_ties_by_the_seed() -> None:
+    rng: np.random.Generator = np.random.default_rng(0)
+    x: NDArray[np.float64] = rng.integers(0, 3, 40).astype(np.float64)
+    y: NDArray[np.float64] = rng.standard_normal(40)
+    values: set[float | None] = {
+        ChatterjeeXi(random_state=seed).evaluate(x, y).statistic for seed in range(5)
+    }
+    assert len(values) > 1
+
+
+def test_chatterjee_xi_negative_seed_is_rejected() -> None:
+    with pytest.raises(ValueError, match="random_state"):
+        _ = ChatterjeeXi(random_state=-1)
