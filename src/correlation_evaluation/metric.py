@@ -10,6 +10,7 @@ from numpy.typing import ArrayLike, NDArray
 
 from .matrix import CorrelationMatrix
 from .result import CorrelationResult
+from .scaling_restriction import ScalingRestriction
 from .types import FloatArray, ScalingMethod
 from .variable_kind import VariableKind
 
@@ -40,11 +41,9 @@ class CorrelationMetric(ABC):
     is_unit_bounded : bool
         Whether the magnitude of the metric is at most 1 by definition, so that
         rounding beyond it is corrected.
-    allowed_scaling_kinds : frozenset[ScalingKind]
-        Kinds of scaling that keep what this metric measures, before the limits of
-        its variables; see `supported_scaling_kinds`.
-    scaling_restriction : str
-        Why the other kinds of scaling are rejected.
+    scaling_restriction : ScalingRestriction | None
+        The limit that this metric itself sets on scaling, before the limits of its
+        variables; None when it sets none. See `supported_scaling_kinds`.
     """
 
     x_kind: ClassVar[VariableKind] = VariableKind.NUMERIC
@@ -54,10 +53,7 @@ class CorrelationMetric(ABC):
     is_defined_for_constant: ClassVar[bool] = False
     is_label_set_shared: ClassVar[bool] = False
     is_unit_bounded: ClassVar[bool] = True
-    allowed_scaling_kinds: ClassVar[frozenset[ScalingKind]] = frozenset(ScalingKind)
-    scaling_restriction: ClassVar[str] = (
-        "it would leave only the sign of each value of a one-dimensional variable"
-    )
+    scaling_restriction: ClassVar[ScalingRestriction | None] = None
 
     @classmethod
     def supported_scaling_kinds(cls) -> frozenset[ScalingKind]:
@@ -73,8 +69,13 @@ class CorrelationMetric(ABC):
         """
         if not cls.x_kind.is_numeric and not cls.y_kind.is_numeric:
             return frozenset()
+        allowed: frozenset[ScalingKind] = (
+            frozenset(ScalingKind)
+            if cls.scaling_restriction is None
+            else cls.scaling_restriction.allowed_kinds
+        )
         return (
-            cls.allowed_scaling_kinds
+            allowed
             & cls.x_kind.supported_scaling_kinds
             & cls.y_kind.supported_scaling_kinds
         )
@@ -171,7 +172,7 @@ class CorrelationMetric(ABC):
                 kind.name for kind in ScalingKind if kind in supported
             )
             raise ValueError(
-                f"{type(self).__name__} does not support {scaling.kind.name} scaling, because {self.scaling_restriction}.\nUse one of:\n  - {allowed}"
+                f"{type(self).__name__} does not support {scaling.kind.name} scaling, because {self._scaling_rejection_reason(scaling.kind)}.\nUse one of:\n  - {allowed}"
             )
         return self._with_scaled_data(scaling).evaluate(
             self._scale(x, self.x_kind, "x", scaling),
@@ -266,6 +267,14 @@ class CorrelationMetric(ABC):
             np.concatenate([x_labels, y_labels]), "x and y"
         )
         return codes[: x_labels.shape[0]], codes[x_labels.shape[0] :]
+
+    def _scaling_rejection_reason(self, kind: ScalingKind) -> str:
+        restriction: ScalingRestriction | None = self.scaling_restriction
+        if restriction is not None and kind not in restriction.allowed_kinds:
+            return restriction.reason
+        return (
+            "it would leave only the sign of each value of a one-dimensional variable"
+        )
 
     def _validate_num_samples(self, num_samples: int) -> None:
         # Metrics that hold data aligned with x and y override this to check it.

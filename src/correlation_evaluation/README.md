@@ -9,7 +9,7 @@ Metrics of association between two variables behind one API. Layers depend only 
 | Component | Description |
 |-----------|-------------|
 | [types.py](./types.py) | Type aliases. |
-| [parameter_validator.py](./parameter_validator.py) | `ParameterValidator`, runtime checks for NaN, non-integer, and non-member options. |
+| [parameter_validator.py](./parameter_validator.py) | `ParameterValidator`, runtime checks for NaN, non-boolean, non-integer, and non-member options. |
 | [options/](./options/README.md) | Enumerations that metrics take as options. |
 | [computation/](./computation/README.md) | Numerical building blocks of metrics. |
 | [confidence_interval.py](./confidence_interval.py) | `ConfidenceInterval`. |
@@ -19,5 +19,6 @@ Metrics of association between two variables behind one API. Layers depend only 
 | [matrix.py](./matrix.py) | `CorrelationMatrix`, the outcomes for all pairs of columns. |
 | [variable_kind.py](./variable_kind.py) | `VariableKind`, the validation and encoding of each measurement scale. |
 | [contingency_table.py](./contingency_table.py) | `ContingencyTable`, joint counts of categorical variables. |
+| [scaling_restriction.py](./scaling_restriction.py) | `ScalingRestriction`, the kinds of scaling a metric accepts, and why. |
 | [metric.py](./metric.py) | `CorrelationMetric`, the abstract metric that handles validation and undefined cases. |
 | [metrics/](./metrics/README.md) | Concrete metrics, grouped by what they measure. |

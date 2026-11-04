@@ -216,3 +216,11 @@ def test_covariate_adjusted_misaligned_covariates_are_rejected_for_undefined_inp
 ) -> None:
     with pytest.raises(ValueError, match="one row per sample"):
         _ = Partial(np.arange(4.0)).evaluate(x, y)
+
+
+def test_pearson_perfect_correlation_of_three_samples_has_a_quiet_interval() -> None:
+    interval: ConfidenceInterval | None = (
+        Pearson().evaluate([0, 0, 1], [0, 0, 1]).confidence_interval
+    )
+    assert interval is not None
+    assert (interval.low, interval.high) == (-1.0, 1.0)

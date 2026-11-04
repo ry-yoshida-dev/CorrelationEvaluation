@@ -271,3 +271,20 @@ def test_scaling_constant_variable_is_undefined() -> None:
         x[:, 0], np.ones(50), FeatureScaling.STANDARD
     )
     assert result.statistic is None
+
+
+@pytest.mark.parametrize(
+    ("metric", "scaling", "reason"),
+    [
+        (ce.Pearson(), FeatureScaling.UNIT_NORM, "only the sign"),
+        (ce.LinConcordance(), FeatureScaling.STANDARD, "hide the differences"),
+        (ce.LinConcordance(), FeatureScaling.UNIT_NORM, "hide the differences"),
+        (ce.Cosine(), FeatureScaling.STANDARD, "constant factor"),
+        (ce.Cosine(), FeatureScaling.UNIT_NORM, "constant factor"),
+    ],
+)
+def test_scaling_rejection_gives_the_reason_for_that_kind(
+    metric: CorrelationMetric, scaling: FeatureScaling, reason: str
+) -> None:
+    with pytest.raises(ValueError, match=reason):
+        _ = metric.evaluate_with_scaling([1, 2, 3], [1, 3, 2], scaling)

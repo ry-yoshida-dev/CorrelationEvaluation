@@ -1,5 +1,6 @@
 import math
 from collections.abc import Callable
+from typing import cast
 
 import numpy as np
 import pytest
@@ -369,3 +370,31 @@ def test_validation_shared_labels_reject_numbers_with_strings(
 ) -> None:
     with pytest.raises(TypeError, match="labels of one type"):
         _ = metric.evaluate(numbers, ["1", "0", "1", "0"])
+
+
+@pytest.mark.parametrize(
+    ("factory", "name"),
+    [
+        (lambda: ce.CramersV(is_bias_corrected="no"), "is_bias_corrected"),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        (lambda: ce.DistanceCorrelation(is_bias_corrected=1), "is_bias_corrected"),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        (lambda: ce.ChatterjeeXi(is_y_continuous="no"), "is_y_continuous"),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        (lambda: ce.WeightedTau(is_additive="no"), "is_additive"),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        (
+            lambda: ce.NearestNeighborMutualInformation(is_correlation_scaled="no"),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+            "is_correlation_scaled",
+        ),
+        (lambda: ce.Partial(np.arange(3.0), is_rank_based="no"), "is_rank_based"),  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+    ],
+)
+def test_validation_non_boolean_option_is_rejected_at_construction(
+    factory: Callable[[], CorrelationMetric], name: str
+) -> None:
+    with pytest.raises(TypeError, match=name):
+        _ = factory()
+
+
+def test_validation_numpy_boolean_option_is_accepted() -> None:
+    metric: ce.CramersV = ce.CramersV(
+        is_bias_corrected=cast(bool, cast(object, np.True_))
+    )
+    assert metric.is_bias_corrected

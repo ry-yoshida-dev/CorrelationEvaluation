@@ -4,6 +4,7 @@ from typing import ClassVar, override
 
 from ...computation import PairwiseDistance
 from ...metric import CorrelationMetric
+from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
 from ...variable_kind import VariableKind
@@ -29,6 +30,9 @@ class DistanceCorrelation(CorrelationMetric):
     x_kind: ClassVar[VariableKind] = VariableKind.MULTIVARIATE
     y_kind: ClassVar[VariableKind] = VariableKind.MULTIVARIATE
     min_samples: ClassVar[int] = 4
+
+    def __post_init__(self) -> None:
+        ParameterValidator.require_booleans(is_bias_corrected=self.is_bias_corrected)
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

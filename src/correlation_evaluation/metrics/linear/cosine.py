@@ -6,6 +6,7 @@ from data_scaler import ScalingKind
 
 from ...metric import CorrelationMetric
 from ...result import CorrelationResult
+from ...scaling_restriction import ScalingRestriction
 from ...types import FloatArray
 
 
@@ -20,11 +21,9 @@ class Cosine(CorrelationMetric):
 
     min_samples: ClassVar[int] = 1
     is_defined_for_constant: ClassVar[bool] = True
-    allowed_scaling_kinds: ClassVar[frozenset[ScalingKind]] = frozenset(
-        {ScalingKind.IDENTITY, ScalingKind.PROPORTIONAL}
-    )
-    scaling_restriction: ClassVar[str] = (
-        "anything but a constant factor would change its value; centering, for one, makes it a Pearson correlation"
+    scaling_restriction: ClassVar[ScalingRestriction | None] = ScalingRestriction(
+        allowed_kinds=frozenset({ScalingKind.IDENTITY, ScalingKind.PROPORTIONAL}),
+        reason="anything but a constant factor would change its value; centering, for one, makes it a Pearson correlation",
     )
 
     @override

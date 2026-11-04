@@ -2,12 +2,12 @@ from dataclasses import dataclass
 from typing import ClassVar, override
 
 import numpy as np
-from data_scaler import ScalingKind
 
 from ...metric import CorrelationMetric
 from ...options import IntraclassForm
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
+from ...scaling_restriction import ScalingRestriction
 from ...types import FloatArray
 
 
@@ -26,11 +26,8 @@ class Intraclass(CorrelationMetric):
     form: IntraclassForm = IntraclassForm.TWO_WAY_RANDOM
 
     is_unit_bounded: ClassVar[bool] = False
-    allowed_scaling_kinds: ClassVar[frozenset[ScalingKind]] = frozenset(
-        {ScalingKind.IDENTITY}
-    )
-    scaling_restriction: ClassVar[str] = (
-        "scaling x and y separately would hide the differences it detects"
+    scaling_restriction: ClassVar[ScalingRestriction | None] = (
+        ScalingRestriction.for_agreement()
     )
 
     def __post_init__(self) -> None:

@@ -6,6 +6,7 @@ import numpy as np
 from scipy import stats
 
 from ...metric import CorrelationMetric
+from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray, ScalingMethod
 from ...variable_kind import VariableKind
@@ -33,6 +34,7 @@ class CovariateAdjusted(CorrelationMetric, ABC):
     is_rank_based: bool = False
 
     def __post_init__(self) -> None:
+        ParameterValidator.require_booleans(is_rank_based=self.is_rank_based)
         object.__setattr__(
             self,
             "covariates",

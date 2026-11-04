@@ -65,6 +65,8 @@ From the package root (the directory containing `pyproject.toml`):
 pip install .
 ```
 
+Git must be available, because the [DataScaler](https://github.com/ry-yoshida-dev/DataScaler) dependency installs from its repository.
+
 ## Examples
 
 Evaluate one pair of variables:
@@ -134,7 +136,7 @@ print(LinConcordance.supported_scaling_kinds())  # frozenset({ScalingKind.IDENTI
 | Other metrics of one-dimensional numeric variables | ✔ | ✔ | ✔ | ✔ | ✗ |
 | Metrics of multivariate variables | ✔ | ✔ | ✔ | ✔ | ✔ |
 
-`FeatureScaling` and every parameter class of DataScaler report their kind as `kind`. Metrics of labels only take no scaling. `SAMPLE_WISE` also raises `ValueError` for a multivariate variable with only one feature.
+`FeatureScaling` and every parameter class of DataScaler report their kind as `kind`. Metrics of labels only take no scaling. `SAMPLE_WISE` also raises `ValueError` for a multivariate variable with only one feature. `QuantileScalingParameters` defaults to 1000 quantiles, and scikit-learn warns when that exceeds the samples, so set `n_quantiles` for smaller data.
 
 ## Notes
 
@@ -163,7 +165,7 @@ uv run basedpyright src tests
 uv run pytest
 ```
 
-The same checks run in CI on every push to `main` and every pull request, along with the tests on the minimum supported dependency versions.
+The same checks run in CI on Python 3.12 to 3.14, on every push to `main` and every pull request, along with the tests on the minimum supported dependency versions.
 
 ## License
 

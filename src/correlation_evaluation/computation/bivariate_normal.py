@@ -1,4 +1,5 @@
 import math
+from typing import ClassVar
 
 import numpy as np
 from scipy import special, stats
@@ -12,7 +13,7 @@ class BivariateNormal:
     """
 
     # Owen's T arguments divide by the limits, and its identity holds in the limit.
-    _ZERO_REPLACEMENT: float = 1e-12
+    _ZERO_REPLACEMENT: ClassVar[float] = 1e-12
 
     @classmethod
     def cdf(cls, h: FloatArray, k: FloatArray, correlation: float) -> FloatArray:

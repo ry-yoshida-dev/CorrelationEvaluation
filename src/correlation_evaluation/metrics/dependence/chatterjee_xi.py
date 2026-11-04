@@ -4,6 +4,7 @@ from typing import ClassVar, override
 from scipy import stats
 
 from ...metric import CorrelationMetric
+from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
 
@@ -23,6 +24,9 @@ class ChatterjeeXi(CorrelationMetric):
     is_y_continuous: bool = False
 
     is_symmetric: ClassVar[bool] = False
+
+    def __post_init__(self) -> None:
+        ParameterValidator.require_booleans(is_y_continuous=self.is_y_continuous)
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

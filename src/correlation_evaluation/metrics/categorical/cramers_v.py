@@ -7,6 +7,7 @@ from scipy import stats
 
 from ...contingency_table import ContingencyTable
 from ...metric import CorrelationMetric
+from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray, IntArray
 from ...variable_kind import VariableKind
@@ -28,6 +29,9 @@ class CramersV(CorrelationMetric):
 
     x_kind: ClassVar[VariableKind] = VariableKind.CATEGORICAL
     y_kind: ClassVar[VariableKind] = VariableKind.CATEGORICAL
+
+    def __post_init__(self) -> None:
+        ParameterValidator.require_booleans(is_bias_corrected=self.is_bias_corrected)
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

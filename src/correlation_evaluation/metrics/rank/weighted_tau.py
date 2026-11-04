@@ -4,6 +4,7 @@ from typing import override
 from scipy import stats
 
 from ...metric import CorrelationMetric
+from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
 
@@ -23,6 +24,9 @@ class WeightedTau(CorrelationMetric):
     """
 
     is_additive: bool = True
+
+    def __post_init__(self) -> None:
+        ParameterValidator.require_booleans(is_additive=self.is_additive)
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

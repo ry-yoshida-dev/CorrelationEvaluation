@@ -4,15 +4,36 @@ import math
 from enum import Enum
 from numbers import Integral
 
+import numpy as np
+
 
 class ParameterValidator:
     """
     Runtime checks that range comparisons cannot express.
 
-    NaN compares false to everything, non-integers pass integer range checks, and
-    other values reach enumeration dispatch, so all would otherwise only fail
-    later with an unclear error.
+    NaN compares false to everything, non-integers pass integer range checks, any
+    value has a truth value, and other values reach enumeration dispatch, so all
+    would otherwise fail later with an unclear error or not at all.
     """
+
+    @staticmethod
+    def require_booleans(**values: object) -> None:
+        """
+        Check that values are booleans.
+
+        Parameters
+        ----------
+        **values : object
+            The values by parameter name.
+
+        Raises
+        ------
+        TypeError
+            If a value is not a boolean.
+        """
+        for name, value in values.items():
+            if not isinstance(value, bool | np.bool_):
+                raise TypeError(f"{name} must be a boolean, got {value!r}")
 
     @staticmethod
     def require_integers(**values: object) -> None:

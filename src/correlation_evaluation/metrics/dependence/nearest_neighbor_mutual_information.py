@@ -31,14 +31,17 @@ class NearestNeighborMutualInformation(CorrelationMetric):
     is_correlation_scaled: bool = False
     random_state: int | None = 0
 
+    is_unit_bounded: ClassVar[bool] = False
+
     def __post_init__(self) -> None:
+        ParameterValidator.require_booleans(
+            is_correlation_scaled=self.is_correlation_scaled
+        )
         ParameterValidator.require_integers(
             num_neighbors=self.num_neighbors, random_state=self.random_state
         )
         if self.num_neighbors <= 0:
             raise ValueError("num_neighbors must be greater than 0")
-
-    is_unit_bounded: ClassVar[bool] = False
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

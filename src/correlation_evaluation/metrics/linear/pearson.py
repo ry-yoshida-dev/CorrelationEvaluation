@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import override
 
+import numpy as np
 from scipy import stats
 
 from ...confidence_interval import ConfidenceInterval
@@ -41,7 +42,9 @@ class Pearson(CorrelationMetric):
         )
         low: float
         high: float
-        low, high = outcome.confidence_interval(self.confidence_level)
+        # SciPy subtracts infinities at r = 1 with three samples, yet returns (-1, 1).
+        with np.errstate(invalid="ignore"):
+            low, high = outcome.confidence_interval(self.confidence_level)
         return CorrelationResult(
             statistic=float(outcome.statistic),
             p_value=float(outcome.pvalue),
