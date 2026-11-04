@@ -27,8 +27,10 @@ class LinConcordance(CorrelationMetric):
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
         covariance: float = float(((x - x.mean()) * (y - y.mean())).mean())
         mean_difference: float = float(x.mean() - y.mean())
-        return CorrelationResult(
-            statistic=2
-            * covariance
-            / (float(np.var(x)) + float(np.var(y)) + mean_difference**2)
+        # Unlike the power operator, multiplying floats overflows to infinity.
+        denominator: float = (
+            float(np.var(x)) + float(np.var(y)) + mean_difference * mean_difference
         )
+        if not 0 < denominator < np.inf:
+            return CorrelationResult(statistic=None)
+        return CorrelationResult(statistic=2 * covariance / denominator)

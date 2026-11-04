@@ -48,3 +48,8 @@ def test_canonical_handles_duplicate_columns() -> None:
 def test_canonical_too_many_features_is_undefined() -> None:
     x: NDArray[np.float64] = np.random.default_rng(0).standard_normal((4, 2))
     assert Canonical().evaluate(x, x[:, ::-1]).statistic is None
+
+
+def test_r_v_coefficient_underflow_is_undefined() -> None:
+    values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0]) * 1e-200
+    assert RVCoefficient().evaluate(values, values).statistic is None

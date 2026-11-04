@@ -58,3 +58,12 @@ def test_correlation_ratio_groups_that_explain_everything_have_no_test() -> None
     result = CorrelationRatio().evaluate([0, 0, 1, 1], [1, 1, 2, 2])
     assert result.statistic == pytest.approx(1.0)
     assert result.p_value is None
+
+
+def test_correlation_ratio_underflow_is_undefined() -> None:
+    assert (
+        CorrelationRatio()
+        .evaluate([0, 0, 1], np.array([1.0, 2.0, 3.0]) * 1e-200)
+        .statistic
+        is None
+    )

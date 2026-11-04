@@ -181,3 +181,38 @@ def test_covariate_adjusted_semipartial_of_explained_x_has_no_p_value() -> None:
     result = Semipartial(z).evaluate(2 * z + 1, rng.standard_normal(20))
     assert result.statistic == pytest.approx(0.0, abs=1e-9)
     assert result.p_value is None
+
+
+def test_pearson_p_value_stays_at_most_one() -> None:
+    # An exact zero correlation, whose p-value rounds to just above 1 in SciPy.
+    assert Pearson().evaluate([1, 0, 2], [1, 2, 2]).p_value == 1.0
+
+
+def test_covariate_adjusted_collinear_covariates_count_once() -> None:
+    rng: np.random.Generator = np.random.default_rng(0)
+    z: NDArray[np.float64] = rng.standard_normal(30)
+    x: NDArray[np.float64] = z + rng.standard_normal(30)
+    y: NDArray[np.float64] = z + rng.standard_normal(30)
+    expected: CorrelationResult = Partial(z).evaluate(x, y)
+    for covariates in (np.column_stack([z, z]), np.column_stack([z, np.ones(30)])):
+        result: CorrelationResult = Partial(covariates).evaluate(x, y)
+        assert result.statistic == pytest.approx(expected.statistic)
+        assert result.p_value == pytest.approx(expected.p_value)
+
+
+@pytest.mark.parametrize("metric_type", [Partial, Semipartial])
+def test_covariate_adjusted_is_undefined_without_degrees_of_freedom(
+    metric_type: type[Partial] | type[Semipartial],
+) -> None:
+    metric: Partial | Semipartial = metric_type(np.array([1.0, 3.0, 2.0]))
+    assert metric.evaluate([1, 2, 4], [3, 1, 5]).statistic is None
+
+
+@pytest.mark.parametrize(
+    ("x", "y"), [([1, 1, 1], [1, 2, 3]), ([1, 2], [1, 2])], ids=["constant", "few"]
+)
+def test_covariate_adjusted_misaligned_covariates_are_rejected_for_undefined_input(
+    x: list[int], y: list[int]
+) -> None:
+    with pytest.raises(ValueError, match="one row per sample"):
+        _ = Partial(np.arange(4.0)).evaluate(x, y)

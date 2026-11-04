@@ -15,7 +15,7 @@ class CorrelationResult:
     Outcome of evaluating a metric on one pair of variables.
 
     NaN from a backing library is stored as None, so undefined values cannot
-    silently propagate through later arithmetic.
+    silently propagate through later arithmetic. A p-value is at most 1.
 
     Attributes
     ----------
@@ -35,8 +35,13 @@ class CorrelationResult:
     def __post_init__(self) -> None:
         if self.statistic is not None and math.isnan(self.statistic):
             object.__setattr__(self, "statistic", None)
-        if self.p_value is not None and math.isnan(self.p_value):
-            object.__setattr__(self, "p_value", None)
+        if self.p_value is not None:
+            # Backing tests can round a p-value of 1 up past it.
+            object.__setattr__(
+                self,
+                "p_value",
+                None if math.isnan(self.p_value) else min(self.p_value, 1.0),
+            )
 
     @classmethod
     def from_test_outcome(cls, outcome: HypothesisOutcome) -> CorrelationResult:

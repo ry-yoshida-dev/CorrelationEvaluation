@@ -29,7 +29,7 @@ For module-level design notes, see [src/correlation_evaluation/README.md](src/co
 | | `NormalScores` | numeric, numeric | -1 to 1 | | Formula over SciPy |
 | Dependence | `ChatterjeeXi` (directional) | numeric, numeric | about 0 to 1 | Yes | SciPy |
 | | `HoeffdingD` | numeric, numeric | -0.5 to 1 without ties; ties in few samples can leave it | | Formula |
-| | `DistanceCorrelation` | multivariate, multivariate | 0 to 1 | | Formula |
+| | `DistanceCorrelation` | multivariate, multivariate | 0 to 1; negative values are possible with `is_bias_corrected` | | Formula |
 | | `HilbertSchmidt` | multivariate, multivariate | 0 to 1 | | Formula |
 | | `MultiscaleGraph` | multivariate, multivariate | -1 to 1 | Yes | SciPy |
 | | `NearestNeighborMutualInformation` | numeric, numeric | 0 and up, nats | | scikit-learn |
@@ -144,10 +144,10 @@ print(LinConcordance.supported_scaling_kinds())  # frozenset({ScalingKind.IDENTI
 - `p_value` and `confidence_interval` are `None` when the metric has no established closed-form test. A permutation test is the general alternative.
 - NaN or infinite input raises `ValueError`; remove missing values first, because no single policy suits all metrics.
 - Labels may be integers, floats, booleans, or strings, including object arrays such as pandas string columns. Object arrays must hold one type, so missing values raise an error. Ordinal metrics order them by sort order, so name them so that it matches their meaning; for example, the strings `"10"` and `"9"` sort in the wrong order.
-- `Matthews` and `CohenKappa` compare labels across x and y, so both must use the same label set; other categorical metrics treat them as unrelated.
+- `Matthews` and `CohenKappa` compare labels across x and y, so both must use the same label set and type, and mixing numbers with strings raises `TypeError`; other categorical metrics treat them as unrelated.
 - `HoeffdingD`, `DistanceCorrelation`, `HilbertSchmidt`, and `MultiscaleGraph` take O(n²) memory, and `MultiscaleGraph` additionally runs a permutation test.
 - `SomersD` builds a table with one row and column per distinct value, so it is impractically slow for continuous data with thousands of samples; `KendallTau` scales far better.
-- `Semipartial` reports the p-value of `Partial`, since both test whether x and y are related given the covariates.
+- `Semipartial` reports the p-value of `Partial`, since both test whether x and y are related given the covariates. Both are undefined when no degrees of freedom remain, that is, for at most two samples more than independent covariates; collinear covariates count once.
 - `Partial`, `Semipartial`, `CorrelationMatrix`, and `ContingencyTable` hold arrays, so they compare by identity.
 - `evaluate_matrix` calls the metric once per pair of columns, so it is slower than `numpy.corrcoef` for very wide data. It raises `TypeError` for metrics that relate different kinds of variables.
 - `Tetrachoric` and `Polychoric` have no interior likelihood maximum for tables with empty cells that imply a perfect relationship. The estimate then approaches ±1, such as 0.999, and its exact value is not meaningful.

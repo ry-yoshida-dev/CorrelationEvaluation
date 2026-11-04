@@ -17,8 +17,9 @@ class CovariateAdjusted(CorrelationMetric, ABC):
     Correlation after linearly removing covariates.
 
     The p-value tests whether x and y are related given the covariates, through
-    the partial correlation. Metrics compare by identity, because they hold an
-    array.
+    the partial correlation. Undefined when no degrees of freedom remain, where a
+    partial correlation is always 1 in magnitude. Collinear covariates count once.
+    Metrics compare by identity, because they hold an array.
 
     Attributes
     ----------
@@ -39,6 +40,14 @@ class CovariateAdjusted(CorrelationMetric, ABC):
         )
 
     @override
+    def _validate_num_samples(self, num_samples: int) -> None:
+        num_rows: int = np.size(self.covariates, axis=0)
+        if num_rows != num_samples:
+            raise ValueError(
+                f"covariates must have one row per sample, got {num_rows} for {num_samples} samples"
+            )
+
+    @override
     def _with_scaled_data(self, scaling: ScalingMethod) -> Self:
         # A nonlinear method would otherwise change how x and y relate to the
         # covariates, so that removing them no longer removes their effect.
@@ -51,15 +60,15 @@ class CovariateAdjusted(CorrelationMetric, ABC):
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
-        if self.covariates.shape[0] != x.size:
-            raise ValueError(
-                f"covariates must have one row per sample, got {self.covariates.shape[0]} for {x.size} samples"
-            )
         covariates: FloatArray = self.covariates
         if self.is_rank_based:
             x = stats.rankdata(x)
             y = stats.rankdata(y)
             covariates = stats.rankdata(covariates, axis=0)
+        num_covariates: int = self._count_independent_columns(covariates)
+        degrees_of_freedom: int = x.size - num_covariates - 2
+        if degrees_of_freedom <= 0:
+            return CorrelationResult(statistic=None)
         residual_x: FloatArray = self._residualize(x, covariates)
         residual_y: FloatArray = self._residualize(y, covariates)
         adjusted_x: FloatArray = self._adjust_x(x, residual_x)
@@ -68,11 +77,10 @@ class CovariateAdjusted(CorrelationMetric, ABC):
         statistic: float = float(stats.pearsonr(adjusted_x, residual_y).statistic)
         if self._is_negligible(residual_x, x):
             return CorrelationResult(statistic=statistic)
-        num_covariates: int = np.size(covariates, axis=1)
         return CorrelationResult.from_t_test(
             statistic,
             num_samples=x.size - num_covariates,
-            degrees_of_freedom=x.size - num_covariates - 2,
+            degrees_of_freedom=degrees_of_freedom,
             tested_correlation=float(stats.pearsonr(residual_x, residual_y).statistic),
         )
 
@@ -95,8 +103,18 @@ class CovariateAdjusted(CorrelationMetric, ABC):
         """
 
     @staticmethod
-    def _residualize(values: FloatArray, covariates: FloatArray) -> FloatArray:
-        design: FloatArray = np.column_stack([np.ones(values.size), covariates])
+    def _design(covariates: FloatArray) -> FloatArray:
+        return np.column_stack([np.ones(np.size(covariates, axis=0)), covariates])
+
+    @classmethod
+    def _count_independent_columns(cls, covariates: FloatArray) -> int:
+        # The rank of the residualizing solver; its intercept absorbs a constant.
+        design: FloatArray = cls._design(covariates)
+        return int(np.linalg.lstsq(design, np.zeros(np.size(design, axis=0)))[2]) - 1
+
+    @classmethod
+    def _residualize(cls, values: FloatArray, covariates: FloatArray) -> FloatArray:
+        design: FloatArray = cls._design(covariates)
         coefficients: FloatArray = np.linalg.lstsq(design, values)[0]
         return values - design @ coefficients
 

@@ -88,3 +88,8 @@ def test_winsorized_hand_computed_value() -> None:
 def test_winsorized_invalid_limit_is_rejected() -> None:
     with pytest.raises(ValueError, match="limit"):
         _ = Winsorized(limit=0.5)
+
+
+def test_biweight_midcorrelation_without_weights_off_the_median_is_undefined() -> None:
+    metric: BiweightMidcorrelation = BiweightMidcorrelation(tuning_constant=0.5)
+    assert metric.evaluate([1, 2, 3, 4, 5], [2, 1, 4, 3, 5]).statistic is None

@@ -29,6 +29,8 @@ class CorrelationRatio(CorrelationMetric):
         group_means: FloatArray = np.bincount(codes, weights=y) / group_sizes
         between: float = float((group_sizes * (group_means - y.mean()) ** 2).sum())
         total: float = float(((y - y.mean()) ** 2).sum())
+        if total == 0:
+            return CorrelationResult(statistic=None)
         within: float = max(total - between, 0.0)
         num_groups: int = group_sizes.size
         degrees_of_freedom: int = y.size - num_groups

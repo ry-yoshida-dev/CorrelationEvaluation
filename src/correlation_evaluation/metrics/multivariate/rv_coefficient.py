@@ -22,11 +22,12 @@ class RVCoefficient(CorrelationMetric):
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
         centered_x: FloatArray = x - x.mean(axis=0)
         centered_y: FloatArray = y - y.mean(axis=0)
-        cross: float = float(np.linalg.norm(centered_x.T @ centered_y)) ** 2
-        return CorrelationResult(
-            statistic=cross
-            / float(
-                np.linalg.norm(centered_x.T @ centered_x)
-                * np.linalg.norm(centered_y.T @ centered_y)
-            )
+        cross_norm: float = float(np.linalg.norm(centered_x.T @ centered_y))
+        cross: float = cross_norm * cross_norm
+        denominator: float = float(
+            np.linalg.norm(centered_x.T @ centered_x)
+            * np.linalg.norm(centered_y.T @ centered_y)
         )
+        if not 0 < denominator < np.inf:
+            return CorrelationResult(statistic=None)
+        return CorrelationResult(statistic=cross / denominator)

@@ -68,4 +68,5 @@ class Intraclass(CorrelationMetric):
                 denominator = subject_square + error_square
         if denominator == 0:
             return CorrelationResult(statistic=None)
-        return CorrelationResult(statistic=numerator / denominator)
+        # Only the upper bound holds by definition; few samples can go below -1.
+        return CorrelationResult(statistic=min(numerator / denominator, 1.0))

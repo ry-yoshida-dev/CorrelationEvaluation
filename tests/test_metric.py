@@ -360,3 +360,12 @@ def test_t_test_of_perfect_correlation_has_zero_p_value() -> None:
         CorrelationResult.from_t_test(1.0, num_samples=5, degrees_of_freedom=3).p_value
         == 0.0
     )
+
+
+@pytest.mark.parametrize("metric", [ce.Matthews(), ce.CohenKappa()])
+@pytest.mark.parametrize("numbers", [[1, 0, 1, 0], [1.0, 0.0, 1.0, 0.0]])
+def test_validation_shared_labels_reject_numbers_with_strings(
+    metric: CorrelationMetric, numbers: list[int] | list[float]
+) -> None:
+    with pytest.raises(TypeError, match="labels of one type"):
+        _ = metric.evaluate(numbers, ["1", "0", "1", "0"])

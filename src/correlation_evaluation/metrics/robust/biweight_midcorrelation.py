@@ -15,7 +15,8 @@ class BiweightMidcorrelation(CorrelationMetric):
     Median-based correlation that smoothly down-weights outliers.
 
     Undefined when more than half of a variable's values are identical, because
-    its median absolute deviation is then zero.
+    its median absolute deviation is then zero, and when the tuning constant leaves
+    no weight on any value off the median.
 
     Attributes
     ----------
@@ -48,4 +49,7 @@ class BiweightMidcorrelation(CorrelationMetric):
             self.tuning_constant * median_absolute_deviation
         )
         weighted: FloatArray = deviations * (1 - scaled**2) ** 2 * (np.abs(scaled) < 1)
-        return weighted / np.linalg.norm(weighted)
+        norm: float = float(np.linalg.norm(weighted))
+        if norm == 0:
+            return None
+        return weighted / norm

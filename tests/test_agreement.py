@@ -84,3 +84,28 @@ def test_intraclass_consistency_ignores_a_shift_but_agreement_does_not() -> None
     )
     assert agreement is not None
     assert agreement < 0.1
+
+
+@pytest.mark.parametrize("form", list(IntraclassForm))
+def test_intraclass_of_identical_ratings_stays_at_most_one(
+    form: IntraclassForm,
+) -> None:
+    rng: np.random.Generator = np.random.default_rng(0)
+    for _ in range(200):
+        ratings: NDArray[np.float64] = rng.standard_normal(20)
+        statistic: float | None = (
+            Intraclass(form=form).evaluate(ratings, ratings).statistic
+        )
+        assert statistic == pytest.approx(1.0)
+        assert statistic is not None and statistic <= 1.0
+
+
+def test_lin_concordance_underflow_is_undefined() -> None:
+    values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0]) * 1e-200
+    assert LinConcordance().evaluate(values, values).statistic is None
+
+
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+def test_lin_concordance_overflow_is_undefined() -> None:
+    values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0]) * 1e200
+    assert LinConcordance().evaluate(values, [0, 1, 2]).statistic is None

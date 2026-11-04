@@ -111,6 +111,7 @@ class CorrelationMetric(ABC):
             raise ValueError(
                 f"x and y must have the same length, got {encoded_x.shape[0]} and {encoded_y.shape[0]}"
             )
+        self._validate_num_samples(np.size(encoded_x, axis=0))
         if encoded_x.shape[0] < self.min_samples:
             return CorrelationResult(statistic=None)
         if not self.is_defined_for_constant and (
@@ -255,10 +256,20 @@ class CorrelationMetric(ABC):
             raise ValueError(
                 f"x and y must have the same length, got shapes {x_labels.shape} and {y_labels.shape}"
             )
+        # Concatenation would stringify the numbers, so that 1.0 never equals "1".
+        kinds: set[str] = {x_labels.dtype.kind, y_labels.dtype.kind}
+        if kinds & set("US") and kinds & set("biuf"):
+            raise TypeError(
+                f"x and y must contain labels of one type, got {x_labels.dtype} and {y_labels.dtype}"
+            )
         codes: FloatArray = self.x_kind.encode(
             np.concatenate([x_labels, y_labels]), "x and y"
         )
         return codes[: x_labels.shape[0]], codes[x_labels.shape[0] :]
+
+    def _validate_num_samples(self, num_samples: int) -> None:
+        # Metrics that hold data aligned with x and y override this to check it.
+        _ = num_samples
 
     def _with_scaled_data(self, scaling: ScalingMethod) -> Self:
         # Metrics that hold data aligned with x and y override this to scale it too.
