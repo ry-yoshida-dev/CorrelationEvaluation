@@ -33,9 +33,18 @@ class HilbertSchmidt(CorrelationMetric):
     def __post_init__(self) -> None:
         if self.bandwidth is None:
             return
-        ParameterValidator.require_not_nan(bandwidth=self.bandwidth)
-        if self.bandwidth <= 0:
-            raise ValueError("bandwidth must be greater than 0 when set")
+        ParameterValidator.require_real_numbers(bandwidth=self.bandwidth)
+        if not 0 < self.bandwidth < math.inf:
+            raise ValueError("bandwidth must be positive and finite when set")
+
+    @override
+    def _with_safe_magnitude(
+        self, x: FloatArray, y: FloatArray
+    ) -> tuple[FloatArray, FloatArray]:
+        # A fixed bandwidth is in the units of the data, unlike the median distance.
+        return (
+            (x, y) if self.bandwidth is not None else super()._with_safe_magnitude(x, y)
+        )
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
@@ -57,6 +66,8 @@ class HilbertSchmidt(CorrelationMetric):
             if self.bandwidth is None
             else self.bandwidth
         )
-        return PairwiseDistance.double_center(
-            np.exp(-(distances**2) / (2 * bandwidth**2))
-        )
+        # Distances far beyond the bandwidth have a kernel value of 0 in the limit.
+        with np.errstate(over="ignore"):
+            return PairwiseDistance.double_center(
+                np.exp(-0.5 * (distances / bandwidth) ** 2)
+            )

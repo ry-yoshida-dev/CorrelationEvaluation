@@ -50,6 +50,6 @@ def test_canonical_too_many_features_is_undefined() -> None:
     assert Canonical().evaluate(x, x[:, ::-1]).statistic is None
 
 
-def test_r_v_coefficient_underflow_is_undefined() -> None:
+def test_r_v_coefficient_tiny_values_keep_their_value() -> None:
     values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0]) * 1e-200
-    assert RVCoefficient().evaluate(values, values).statistic is None
+    assert RVCoefficient().evaluate(values, values).statistic == pytest.approx(1.0)

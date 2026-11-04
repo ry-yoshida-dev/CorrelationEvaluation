@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
+from functools import cached_property
 from typing import Self, override
 
 import numpy as np
@@ -64,12 +65,10 @@ class CovariateAdjusted(CorrelationMetric, ABC):
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
-        covariates: FloatArray = self.covariates
         if self.is_rank_based:
             x = stats.rankdata(x)
             y = stats.rankdata(y)
-            covariates = stats.rankdata(covariates, axis=0)
-        basis: FloatArray = ColumnSpace.orthonormal_basis(covariates)
+        basis: FloatArray = self._covariate_basis
         num_covariates: int = np.size(basis, axis=1)
         degrees_of_freedom: int = x.size - num_covariates - 2
         if degrees_of_freedom <= 0:
@@ -87,6 +86,15 @@ class CovariateAdjusted(CorrelationMetric, ABC):
             num_samples=x.size - num_covariates,
             degrees_of_freedom=degrees_of_freedom,
             tested_correlation=float(stats.pearsonr(residual_x, residual_y).statistic),
+        )
+
+    @cached_property
+    def _covariate_basis(self) -> FloatArray:
+        # Decomposed once, because a matrix evaluates many pairs with these covariates.
+        return ColumnSpace.orthonormal_basis(
+            stats.rankdata(self.covariates, axis=0)
+            if self.is_rank_based
+            else self.covariates
         )
 
     @abstractmethod

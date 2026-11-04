@@ -24,7 +24,7 @@ class PercentageBend(CorrelationMetric):
     bend: float = 0.2
 
     def __post_init__(self) -> None:
-        ParameterValidator.require_not_nan(bend=self.bend)
+        ParameterValidator.require_real_numbers(bend=self.bend)
         if not 0 < self.bend <= 0.5:
             raise ValueError("bend must be in (0, 0.5]")
 

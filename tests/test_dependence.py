@@ -124,7 +124,11 @@ def test_distance_correlation_bias_correction_shrinks_the_null() -> None:
     rng: np.random.Generator = np.random.default_rng(0)
     x: NDArray[np.float64] = rng.standard_normal(30)
     y: NDArray[np.float64] = rng.standard_normal(30)
-    corrected = DistanceCorrelation(is_bias_corrected=True).evaluate(x, y).statistic
+    corrected = (
+        DistanceCorrelation(is_squared=True, is_bias_corrected=True)
+        .evaluate(x, y)
+        .statistic
+    )
     plain = DistanceCorrelation().evaluate(x, y).statistic
     assert corrected is not None
     assert plain is not None

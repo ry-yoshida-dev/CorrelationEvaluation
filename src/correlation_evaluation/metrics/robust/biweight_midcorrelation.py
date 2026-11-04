@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from typing import override
 
@@ -27,9 +28,9 @@ class BiweightMidcorrelation(CorrelationMetric):
     tuning_constant: float = 9.0
 
     def __post_init__(self) -> None:
-        ParameterValidator.require_not_nan(tuning_constant=self.tuning_constant)
-        if self.tuning_constant <= 0:
-            raise ValueError("tuning_constant must be greater than 0")
+        ParameterValidator.require_real_numbers(tuning_constant=self.tuning_constant)
+        if not 0 < self.tuning_constant < math.inf:
+            raise ValueError("tuning_constant must be positive and finite")
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

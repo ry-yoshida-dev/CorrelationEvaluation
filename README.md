@@ -29,7 +29,7 @@ For module-level design notes, see [src/correlation_evaluation/README.md](src/co
 | | `NormalScores` | numeric, numeric | -1 to 1 | | Formula over SciPy |
 | Dependence | `ChatterjeeXi` (directional) | numeric, numeric | about 0 to 1 | Yes | SciPy |
 | | `HoeffdingD` | numeric, numeric | -0.5 to 1 without ties; ties in few samples can leave it | | Formula |
-| | `DistanceCorrelation` | multivariate, multivariate | 0 to 1; negative values are possible with `is_bias_corrected` | | Formula |
+| | `DistanceCorrelation` | multivariate, multivariate | 0 to 1; negative values are possible with `is_bias_corrected`, which estimates the square and requires `is_squared` | | Formula |
 | | `HilbertSchmidt` | multivariate, multivariate | 0 to 1 | | Formula |
 | | `MultiscaleGraph` | multivariate, multivariate | -1 to 1 | Yes | SciPy |
 | | `NearestNeighborMutualInformation` | numeric, numeric | 0 and up, nats | | scikit-learn |
@@ -144,15 +144,17 @@ print(LinConcordance.supported_scaling_kinds())  # frozenset({ScalingKind.IDENTI
 - `evaluate` never scales its input. `DistanceCorrelation`, `HilbertSchmidt`, `MultiscaleGraph`, and `RVCoefficient` compare columns on their raw scale, so a column in large units can dominate the value; use `evaluate_with_scaling` when such differences are only a matter of units. It scales x, y, and the covariates of `Partial` and `Semipartial` separately, and leaves labels as they are.
 - `evaluate_with_scaling` rejects what would change the meaning of a metric: separate scaling removes what `LinConcordance` and `Intraclass` detect, centering makes `Cosine` a Pearson correlation, and a sample-wise method such as `FeatureScaling.UNIT_NORM` leaves only the sign of a one-dimensional variable. To compare two raters on a common scale, fit one scaler on both yourself. Which accepted method suits the data remains your decision; for example, no method fully corrects an extreme outlier, so deal with outliers first.
 - `p_value` and `confidence_interval` are `None` when the metric has no established closed-form test. A permutation test is the general alternative.
+- Values beyond 1e50 or below 1e-50 in magnitude are rescaled exactly by a power of two before computing, so they neither overflow nor underflow. `HilbertSchmidt` with a fixed `bandwidth` keeps its units instead.
 - NaN or infinite input raises `ValueError`; remove missing values first, because no single policy suits all metrics.
-- Labels may be integers, floats, booleans, or strings, including object arrays such as pandas string columns. Object arrays must hold one type, so missing values raise an error. Ordinal metrics order them by sort order, so name them so that it matches their meaning; for example, the strings `"10"` and `"9"` sort in the wrong order.
+- Labels may be integers, floats, booleans, or strings, including NumPy variable-width strings and object arrays such as pandas string columns. Object arrays must hold one type, so missing values raise an error. Ordinal metrics order them by sort order, so name them so that it matches their meaning; for example, the strings `"10"` and `"9"` sort in the wrong order.
 - `Matthews` and `CohenKappa` compare labels across x and y, so both must use the same label set and type, and mixing numbers with strings raises `TypeError`; other categorical metrics treat them as unrelated.
 - `HoeffdingD`, `DistanceCorrelation`, `HilbertSchmidt`, and `MultiscaleGraph` take O(n²) memory, and `MultiscaleGraph` additionally runs a permutation test.
 - `SomersD` takes O(n²) time, so for very large data `KendallTau`, at O(n log n), scales far better.
+- `NearestNeighborMutualInformation` assumes no ties and breaks them with small random noise, so with ties the value depends on `random_state`, though not on the order of the samples or variables; use `MutualInformation` for discrete data.
 - `ChatterjeeXi` breaks ties in x at random, as the estimator defines, using `random_state`. With such ties the value depends on the seed, but not on the order of the samples.
 - `Semipartial` reports the p-value of `Partial`, since both test whether x and y are related given the covariates. Both are undefined when no degrees of freedom remain, that is, for at most two samples more than independent covariates; collinear covariates count once.
 - `Partial`, `Semipartial`, `CorrelationMatrix`, and `ContingencyTable` hold arrays, so they compare by identity.
-- `evaluate_matrix` calls the metric once per pair of columns, so it is slower than `numpy.corrcoef` for very wide data. It raises `TypeError` for metrics that relate different kinds of variables.
+- `evaluate_matrix` computes all pairs at once for `Pearson` and `Spearman`, and calls other metrics once per pair of columns, which is slower for very wide data. It raises `TypeError` for metrics that relate different kinds of variables, and its validation errors name the column.
 - `Tetrachoric` and `Polychoric` have no interior likelihood maximum for tables with empty cells that imply a perfect relationship. The estimate then approaches ±1, such as 0.999, and its exact value is not meaningful.
 
 ## Development

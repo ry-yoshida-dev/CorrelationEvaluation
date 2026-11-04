@@ -54,16 +54,25 @@ def test_correlation_ratio_matches_one_way_analysis_of_variance() -> None:
     )
 
 
-def test_correlation_ratio_groups_that_explain_everything_have_no_test() -> None:
-    result = CorrelationRatio().evaluate([0, 0, 1, 1], [1, 1, 2, 2])
+def test_correlation_ratio_one_sample_per_group_has_no_test() -> None:
+    result = CorrelationRatio().evaluate([0, 1, 2], [1, 2, 4])
     assert result.statistic == pytest.approx(1.0)
     assert result.p_value is None
 
 
-def test_correlation_ratio_underflow_is_undefined() -> None:
-    assert (
-        CorrelationRatio()
-        .evaluate([0, 0, 1], np.array([1.0, 2.0, 3.0]) * 1e-200)
-        .statistic
-        is None
+def test_correlation_ratio_tiny_values_keep_their_value() -> None:
+    values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0])
+    assert CorrelationRatio().evaluate(
+        [0, 0, 1], values * 1e-200
+    ).statistic == pytest.approx(
+        CorrelationRatio().evaluate([0, 0, 1], values).statistic
     )
+
+
+@pytest.mark.parametrize("value", [0.1, 0.3, 0.7, 1e6 + 0.1])
+def test_correlation_ratio_perfect_separation_has_zero_p_value(value: float) -> None:
+    result = CorrelationRatio().evaluate(
+        [0, 0, 0, 1, 1, 1], [value, value, value, 2 * value, 2 * value, 2 * value]
+    )
+    assert result.statistic == pytest.approx(1.0)
+    assert result.p_value == 0.0

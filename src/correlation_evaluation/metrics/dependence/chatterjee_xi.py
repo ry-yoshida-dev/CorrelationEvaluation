@@ -34,9 +34,7 @@ class ChatterjeeXi(CorrelationMetric):
 
     def __post_init__(self) -> None:
         ParameterValidator.require_booleans(is_y_continuous=self.is_y_continuous)
-        ParameterValidator.require_integers(random_state=self.random_state)
-        if self.random_state is not None and self.random_state < 0:
-            raise ValueError("random_state must be at least 0 when set")
+        ParameterValidator.require_seeds(random_state=self.random_state)
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:

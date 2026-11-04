@@ -100,12 +100,11 @@ def test_intraclass_of_identical_ratings_stays_at_most_one(
         assert statistic is not None and statistic <= 1.0
 
 
-def test_lin_concordance_underflow_is_undefined() -> None:
+def test_lin_concordance_tiny_values_keep_their_value() -> None:
     values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0]) * 1e-200
-    assert LinConcordance().evaluate(values, values).statistic is None
+    assert LinConcordance().evaluate(values, values).statistic == pytest.approx(1.0)
 
 
-@pytest.mark.filterwarnings("ignore::RuntimeWarning")
-def test_lin_concordance_overflow_is_undefined() -> None:
+def test_lin_concordance_of_incomparable_scales_is_zero() -> None:
     values: NDArray[np.float64] = np.array([1.0, 2.0, 3.0]) * 1e200
-    assert LinConcordance().evaluate(values, [0, 1, 2]).statistic is None
+    assert LinConcordance().evaluate(values, [0, 1, 2]).statistic == pytest.approx(0.0)

@@ -19,12 +19,16 @@ class DistanceCorrelation(CorrelationMetric):
 
     Attributes
     ----------
+    is_squared : bool
+        Whether to return the squared distance correlation, which is the same scale
+        for both estimators.
     is_bias_corrected : bool
-        Whether to return the unbiased estimator of the squared distance
-        correlation, which is near 0 under independence even for few samples and
-        can be negative. Otherwise returns the non-squared, biased estimator.
+        Whether to use the unbiased estimator of the squared distance correlation,
+        which is near 0 under independence even for few samples. It can be negative,
+        so it has no root and requires `is_squared`.
     """
 
+    is_squared: bool = False
     is_bias_corrected: bool = False
 
     x_kind: ClassVar[VariableKind] = VariableKind.MULTIVARIATE
@@ -32,7 +36,11 @@ class DistanceCorrelation(CorrelationMetric):
     min_samples: ClassVar[int] = 4
 
     def __post_init__(self) -> None:
-        ParameterValidator.require_booleans(is_bias_corrected=self.is_bias_corrected)
+        ParameterValidator.require_booleans(
+            is_squared=self.is_squared, is_bias_corrected=self.is_bias_corrected
+        )
+        if self.is_bias_corrected and not self.is_squared:
+            raise ValueError("is_bias_corrected requires is_squared")
 
     @override
     def _compute(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
@@ -51,5 +59,5 @@ class DistanceCorrelation(CorrelationMetric):
             return CorrelationResult(statistic=None)
         squared: float = float((centered_x * centered_y).sum()) / denominator
         return CorrelationResult(
-            statistic=squared if self.is_bias_corrected else math.sqrt(max(squared, 0))
+            statistic=squared if self.is_squared else math.sqrt(max(squared, 0))
         )

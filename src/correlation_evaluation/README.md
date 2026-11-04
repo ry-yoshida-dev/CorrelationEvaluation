@@ -9,7 +9,7 @@ Metrics of association between two variables behind one API. Layers depend only 
 | Component | Description |
 |-----------|-------------|
 | [types.py](./types.py) | Type aliases. |
-| [parameter_validator.py](./parameter_validator.py) | `ParameterValidator`, runtime checks for NaN, non-boolean, non-integer, and non-member options. |
+| [parameter_validator.py](./parameter_validator.py) | `ParameterValidator`, runtime checks for NaN, non-boolean, non-real, non-integer, non-seed, and non-member options. |
 | [options/](./options/README.md) | Enumerations that metrics take as options. |
 | [computation/](./computation/README.md) | Numerical building blocks of metrics. |
 | [confidence_interval.py](./confidence_interval.py) | `ConfidenceInterval`. |

@@ -25,7 +25,7 @@ class Winsorized(CorrelationMetric):
     limit: float = 0.2
 
     def __post_init__(self) -> None:
-        ParameterValidator.require_not_nan(limit=self.limit)
+        ParameterValidator.require_real_numbers(limit=self.limit)
         if not 0 <= self.limit < 0.5:
             raise ValueError("limit must be in [0, 0.5)")
 

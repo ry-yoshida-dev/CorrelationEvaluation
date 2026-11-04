@@ -133,7 +133,7 @@ class VariableKind(Enum):
             if len({type(label) for label in labels}) > 1:
                 raise TypeError(f"{name} must contain labels of one type")
             array = np.asarray(labels)
-        if array.dtype.kind not in "biufUS":
+        if array.dtype.kind not in "biufUST":
             raise TypeError(f"{name} must contain labels, got {array.dtype}")
         if array.ndim != 1:
             raise ValueError(f"{name} must be 1-D, got shape {array.shape}")

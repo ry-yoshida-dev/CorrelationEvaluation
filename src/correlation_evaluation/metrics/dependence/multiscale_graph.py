@@ -34,9 +34,8 @@ class MultiscaleGraph(CorrelationMetric):
     min_samples: ClassVar[int] = 6
 
     def __post_init__(self) -> None:
-        ParameterValidator.require_integers(
-            num_permutations=self.num_permutations, random_state=self.random_state
-        )
+        ParameterValidator.require_integers(num_permutations=self.num_permutations)
+        ParameterValidator.require_seeds(random_state=self.random_state)
         if self.num_permutations <= 0:
             raise ValueError("num_permutations must be greater than 0")
 

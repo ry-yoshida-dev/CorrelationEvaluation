@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from numbers import Integral
+from numbers import Integral, Real
 
 import numpy as np
 
@@ -11,9 +11,9 @@ class ParameterValidator:
     """
     Runtime checks that range comparisons cannot express.
 
-    NaN compares false to everything, non-integers pass integer range checks, any
-    value has a truth value, and other values reach enumeration dispatch, so all
-    would otherwise fail later with an unclear error or not at all.
+    NaN compares false to everything, booleans and non-integers pass numeric range
+    checks, any value has a truth value, and other values reach enumeration dispatch,
+    so all would otherwise fail later with an unclear error or not at all.
     """
 
     @staticmethod
@@ -78,20 +78,46 @@ class ParameterValidator:
                 raise TypeError(f"{name} must be a {enum_type.__name__}, got {value!r}")
 
     @staticmethod
-    def require_not_nan(**values: float) -> None:
+    def require_seeds(**values: object) -> None:
         """
-        Check that values are not NaN.
+        Check that values are random seeds that all backing libraries accept, or None.
 
         Parameters
         ----------
-        **values : float
+        **values : object
             The values by parameter name.
 
         Raises
         ------
+        TypeError
+            If a value is neither None nor an integer.
+        ValueError
+            If a value is outside [0, 2**32).
+        """
+        ParameterValidator.require_integers(**values)
+        for name, value in values.items():
+            if isinstance(value, Integral) and not 0 <= int(value) < 2**32:
+                raise ValueError(f"{name} must be in [0, 2**32), got {value!r}")
+
+    @staticmethod
+    def require_real_numbers(**values: object) -> None:
+        """
+        Check that values are real numbers other than NaN.
+
+        Parameters
+        ----------
+        **values : object
+            The values by parameter name.
+
+        Raises
+        ------
+        TypeError
+            If a value is not a real number; booleans are rejected.
         ValueError
             If a value is NaN.
         """
         for name, value in values.items():
+            if isinstance(value, bool | np.bool_) or not isinstance(value, Real):
+                raise TypeError(f"{name} must be a real number, got {value!r}")
             if math.isnan(value):
                 raise ValueError(f"{name} must not be NaN")

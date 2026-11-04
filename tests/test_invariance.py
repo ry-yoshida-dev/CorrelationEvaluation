@@ -234,3 +234,158 @@ def test_bias_corrected_cramers_v_undefined_has_no_p_value() -> None:
     )
     assert result.statistic is None
     assert result.p_value is None
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [
+        m
+        for m in METRICS
+        if (m.x_kind.is_numeric or m.y_kind.is_numeric)
+        and not isinstance(m, ce.MultiscaleGraph)
+    ],
+    ids=metric_name,
+)
+@pytest.mark.parametrize("factor", [2.0**700, 2.0**-700, 2.0**1020])
+def test_metric_gives_the_same_value_for_extreme_magnitudes(
+    metric: CorrelationMetric, factor: float
+) -> None:
+    x: FloatMatrix
+    y: FloatMatrix
+    x, y = correlated_pair(metric)
+    scaled_x: FloatMatrix = x * factor if metric.x_kind.is_numeric else x
+    scaled_y: FloatMatrix = y * factor if metric.y_kind.is_numeric else y
+    assert statistic_of(metric.evaluate(scaled_x, scaled_y)) == pytest.approx(
+        statistic_of(metric.evaluate(x, y)), abs=1e-6
+    )
+
+
+def test_cosine_of_one_extreme_variable_keeps_its_value() -> None:
+    assert ce.Cosine().evaluate([1e200, 1e200], [1.0, 1.0]).statistic == pytest.approx(
+        1.0
+    )
+    assert ce.Cosine().evaluate(
+        [1e-200, 1e-200], [1.0, 1.0]
+    ).statistic == pytest.approx(1.0)
+
+
+def test_lin_concordance_keeps_extreme_differences_between_variables() -> None:
+    x: FloatMatrix = np.array([1.0, 2.0, 3.0, 4.0]) * 1e200
+    statistic: float | None = ce.LinConcordance().evaluate(x, x / 1e200).statistic
+    assert statistic == pytest.approx(0.0, abs=1e-9)
+
+
+def test_hilbert_schmidt_fixed_bandwidth_keeps_its_units() -> None:
+    x: FloatMatrix = np.array([0.0, 1.0, 2.0, 3.0, 4.0]) * 1e200
+    result: CorrelationResult = ce.HilbertSchmidt(bandwidth=1.0).evaluate(x, x)
+    assert result.statistic == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    "x", [np.array([0, 0, 1, 1, 2, 2]), np.array([0, 1, 0, 1, 0, 1])]
+)
+def test_nearest_neighbor_mutual_information_tied_data_ignores_any_order(
+    x: NDArray[np.int64],
+) -> None:
+    rng: np.random.Generator = np.random.default_rng(0)
+    tied_x: FloatMatrix = np.tile(x, 20).astype(np.float64)
+    tied_y: FloatMatrix = rng.integers(0, 3, tied_x.size).astype(np.float64)
+    metric: ce.NearestNeighborMutualInformation = ce.NearestNeighborMutualInformation()
+    order: NDArray[np.int64] = rng.permutation(tied_x.size)
+    expected: float = statistic_of(metric.evaluate(tied_x, tied_y))
+    assert statistic_of(metric.evaluate(tied_y, tied_x)) == pytest.approx(expected)
+    assert statistic_of(metric.evaluate(tied_x[order], tied_y[order])) == pytest.approx(
+        expected
+    )
+
+
+@pytest.mark.parametrize("metric_type", [ce.Pearson, ce.Spearman])
+@pytest.mark.parametrize("alternative", list(ce.Alternative))
+@pytest.mark.parametrize("num_samples", [3, 4, 30])
+def test_batch_matrix_matches_pairwise_evaluation(
+    metric_type: type[ce.Pearson] | type[ce.Spearman],
+    alternative: ce.Alternative,
+    num_samples: int,
+) -> None:
+    rng: np.random.Generator = np.random.default_rng(num_samples)
+    columns: FloatMatrix = rng.standard_normal((num_samples, 5))
+    columns[:, 1] = rng.integers(0, 2, num_samples) + columns[:, 0] * 0
+    columns[:, 2] = 3.0
+    columns[:, 3] = 2.0**700 * columns[:, 3]
+    columns[:, 4] = 2.0 * columns[:, 0] + 1.0
+    metric: ce.Pearson | ce.Spearman = metric_type(alternative=alternative)
+    matrix: ce.CorrelationMatrix = metric.evaluate_matrix(columns)
+    for i in range(5):
+        for j in range(5):
+            result: CorrelationResult = metric.evaluate(columns[:, i], columns[:, j])
+            expected_statistic: float = (
+                np.nan if result.statistic is None else result.statistic
+            )
+            expected_p: float = np.nan if result.p_value is None else result.p_value
+            assert float(np.take(matrix.statistics, 5 * i + j)) == pytest.approx(
+                expected_statistic, abs=1e-9, nan_ok=True
+            )
+            assert float(np.take(matrix.p_values, 5 * i + j)) == pytest.approx(
+                expected_p, abs=1e-7, nan_ok=True
+            )
+
+
+def test_batch_matrix_with_too_few_samples_is_undefined() -> None:
+    matrix: ce.CorrelationMatrix = ce.Pearson().evaluate_matrix(np.eye(2))
+    assert np.isnan(matrix.statistics).all()
+
+
+def test_matrix_error_names_the_column() -> None:
+    columns: FloatMatrix = np.array([[1.0, 2.0], [3.0, np.nan], [5.0, 6.0]])
+    with pytest.raises(ValueError, match="column 1 must be finite"):
+        _ = ce.Pearson().evaluate_matrix(columns)
+
+
+def test_matrix_of_no_columns_is_empty() -> None:
+    assert ce.Pearson().evaluate_matrix(np.empty((3, 0))).statistics.shape == (0, 0)
+
+
+def test_covariate_matrix_decomposes_covariates_once_per_metric() -> None:
+    covariates: FloatMatrix = np.random.default_rng(0).standard_normal(30)
+    metric: ce.Partial = ce.Partial(covariates)
+    columns: FloatMatrix = np.random.default_rng(1).standard_normal((30, 3))
+    _ = metric.evaluate_matrix(columns)
+    basis: FloatMatrix = metric._covariate_basis  # pyright: ignore[reportPrivateUsage]
+    _ = metric.evaluate(columns[:, 0], columns[:, 1])
+    assert metric._covariate_basis is basis  # pyright: ignore[reportPrivateUsage]
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: ce.HilbertSchmidt(bandwidth=float("inf")),
+        lambda: ce.BiweightMidcorrelation(tuning_constant=float("inf")),
+        lambda: ce.MultiscaleGraph(random_state=-1),
+        lambda: ce.MultiscaleGraph(random_state=4294967296),
+        lambda: ce.NearestNeighborMutualInformation(random_state=-1),
+        lambda: ce.ChatterjeeXi(random_state=-1),
+        lambda: ce.DistanceCorrelation(is_bias_corrected=True),
+    ],
+)
+def test_invalid_option_value_is_rejected_at_construction(
+    factory: Callable[[], CorrelationMetric],
+) -> None:
+    with pytest.raises(ValueError):
+        _ = factory()
+
+
+def test_boolean_for_a_real_option_is_rejected() -> None:
+    with pytest.raises(TypeError, match="bandwidth"):
+        _ = ce.HilbertSchmidt(bandwidth=True)
+
+
+def test_string_labels_of_variable_width_are_accepted() -> None:
+    labels: NDArray[np.str_] = np.array(
+        ["a", "b", "a", "b"], dtype=np.dtypes.StringDType()
+    )
+    result: CorrelationResult = ce.Phi().evaluate(labels, [0, 1, 0, 1])
+    assert result.statistic == pytest.approx(1.0)
+    shared: CorrelationResult = ce.Matthews().evaluate(
+        labels, np.array(["a", "b", "a", "b"])
+    )
+    assert shared.statistic == pytest.approx(1.0)

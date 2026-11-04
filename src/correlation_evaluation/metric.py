@@ -55,6 +55,10 @@ class CorrelationMetric(ABC):
     is_unit_bounded: ClassVar[bool] = True
     scaling_restriction: ClassVar[ScalingRestriction | None] = None
 
+    # Squares and products of four such values stay far from overflow and underflow.
+    _MIN_SAFE_MAGNITUDE: ClassVar[float] = 1e-50
+    _MAX_SAFE_MAGNITUDE: ClassVar[float] = 1e50
+
     @classmethod
     def supported_scaling_kinds(cls) -> frozenset[ScalingKind]:
         """
@@ -108,18 +112,22 @@ class CorrelationMetric(ABC):
         encoded_x: FloatArray
         encoded_y: FloatArray
         encoded_x, encoded_y = self._encode_pair(x, y)
-        if encoded_x.shape[0] != encoded_y.shape[0]:
+        return self._evaluate_encoded(encoded_x, encoded_y)
+
+    def _evaluate_encoded(self, x: FloatArray, y: FloatArray) -> CorrelationResult:
+        if x.shape[0] != y.shape[0]:
             raise ValueError(
-                f"x and y must have the same length, got {encoded_x.shape[0]} and {encoded_y.shape[0]}"
+                f"x and y must have the same length, got {x.shape[0]} and {y.shape[0]}"
             )
-        self._validate_num_samples(np.size(encoded_x, axis=0))
-        if encoded_x.shape[0] < self.min_samples:
+        self._validate_num_samples(np.size(x, axis=0))
+        if x.shape[0] < self.min_samples:
             return CorrelationResult(statistic=None)
+        x, y = self._with_safe_magnitude(x, y)
         if not self.is_defined_for_constant and (
-            self._is_constant(encoded_x) or self._is_constant(encoded_y)
+            self._is_constant(x) or self._is_constant(y)
         ):
             return CorrelationResult(statistic=None)
-        result: CorrelationResult = self._compute(encoded_x, encoded_y)
+        result: CorrelationResult = self._compute(x, y)
         if (
             self.is_unit_bounded
             and result.statistic is not None
@@ -199,7 +207,8 @@ class CorrelationMetric(ABC):
             If this metric takes variables of different kinds, or if a column
             has the wrong data type.
         ValueError
-            If X is not two-dimensional, or a column is invalid.
+            If X is not two-dimensional, or a column is invalid; the message names
+            the column.
         """
         if self.x_kind is not self.y_kind:
             raise TypeError(
@@ -208,7 +217,21 @@ class CorrelationMetric(ABC):
         columns: NDArray[np.generic] = np.asarray(X)
         if columns.ndim != 2:
             raise ValueError(f"X must be 2-D, got shape {columns.shape}")
-        num_columns: int = np.size(columns, axis=1)
+        encoded: list[FloatArray] = [
+            self.x_kind.encode(columns[:, index], f"column {index}")
+            for index in range(np.size(columns, axis=1))
+        ]
+        if not encoded:
+            return CorrelationMatrix(
+                statistics=np.empty((0, 0)), p_values=np.empty((0, 0))
+            )
+        return self._evaluate_columns(columns, encoded)
+
+    def _evaluate_columns(
+        self, columns: NDArray[np.generic], encoded: list[FloatArray]
+    ) -> CorrelationMatrix:
+        # Metrics with a batch computation override this.
+        num_columns: int = len(encoded)
         statistics: FloatArray = np.full((num_columns, num_columns), np.nan)
         p_values: FloatArray = np.full((num_columns, num_columns), np.nan)
         pairs: list[tuple[int, int]] = (
@@ -218,9 +241,12 @@ class CorrelationMetric(ABC):
             else [(i, j) for i in range(num_columns) for j in range(num_columns)]
         )
         for i, j in pairs:
-            column_x: NDArray[np.generic] = columns[:, i]
-            column_y: NDArray[np.generic] = columns[:, j]
-            result: CorrelationResult = self.evaluate(column_x, column_y)
+            # Shared label sets need the labels of a pair encoded together.
+            result: CorrelationResult = (
+                self.evaluate(columns[:, i], columns[:, j])
+                if self.is_label_set_shared
+                else self._evaluate_encoded(encoded[i], encoded[j])
+            )
             statistic: float = np.nan if result.statistic is None else result.statistic
             p_value: float = np.nan if result.p_value is None else result.p_value
             statistics[i, j] = statistic
@@ -259,7 +285,7 @@ class CorrelationMetric(ABC):
             )
         # Concatenation would stringify the numbers, so that 1.0 never equals "1".
         kinds: set[str] = {x_labels.dtype.kind, y_labels.dtype.kind}
-        if kinds & set("US") and kinds & set("biuf"):
+        if kinds & set("UST") and kinds & set("biuf"):
             raise TypeError(
                 f"x and y must contain labels of one type, got {x_labels.dtype} and {y_labels.dtype}"
             )
@@ -267,6 +293,39 @@ class CorrelationMetric(ABC):
             np.concatenate([x_labels, y_labels]), "x and y"
         )
         return codes[: x_labels.shape[0]], codes[x_labels.shape[0] :]
+
+    def _with_safe_magnitude(
+        self, x: FloatArray, y: FloatArray
+    ) -> tuple[FloatArray, FloatArray]:
+        # Scaling by powers of two is exact. Metrics that compare x and y on one scale
+        # need one factor, and the others are free to use separate ones.
+        largest_x: float = self._largest_magnitude(x)
+        largest_y: float = self._largest_magnitude(y)
+        exponent_x: int
+        exponent_y: int
+        if ScalingKind.PROPORTIONAL in self.supported_scaling_kinds():
+            exponent_x = self._rescaling_exponent(largest_x)
+            exponent_y = self._rescaling_exponent(largest_y)
+        else:
+            exponent_x = exponent_y = self._rescaling_exponent(
+                max(largest_x, largest_y)
+            )
+        if exponent_x == 0 and exponent_y == 0:
+            return x, y
+        return np.ldexp(x, -exponent_x), np.ldexp(y, -exponent_y)
+
+    @staticmethod
+    def _largest_magnitude(values: FloatArray) -> float:
+        magnitudes: FloatArray = np.abs(values)
+        return float(np.max(magnitudes))
+
+    @classmethod
+    def _rescaling_exponent(cls, magnitude: float) -> int:
+        if magnitude == 0 or (
+            cls._MIN_SAFE_MAGNITUDE <= magnitude <= cls._MAX_SAFE_MAGNITUDE
+        ):
+            return 0
+        return math.frexp(magnitude)[1]
 
     def _scaling_rejection_reason(self, kind: ScalingKind) -> str:
         restriction: ScalingRestriction | None = self.scaling_restriction
