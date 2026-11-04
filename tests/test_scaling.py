@@ -201,6 +201,40 @@ def test_affine_scaling_keeps_a_partial_correlation() -> None:
     ).statistic == pytest.approx(metric.evaluate(x, y).statistic)
 
 
+@pytest.mark.parametrize(
+    "metric_class",
+    [
+        ce.Canonical,
+        ce.DistanceCorrelation,
+        ce.HilbertSchmidt,
+        ce.MultiscaleGraph,
+        ce.RVCoefficient,
+    ],
+)
+@pytest.mark.parametrize("is_column", [False, True], ids=["1-D", "one-column"])
+def test_sample_wise_scaling_rejects_one_feature(
+    metric_class: type[CorrelationMetric], is_column: bool
+) -> None:
+    x: NDArray[np.float64]
+    y: NDArray[np.float64]
+    x, y = related_columns()
+    single: NDArray[np.float64] = x[:, [0]] if is_column else x[:, 0]
+    with pytest.raises(ValueError, match="x has one feature"):
+        _ = metric_class().evaluate_with_scaling(single, y, FeatureScaling.UNIT_NORM)
+    with pytest.raises(ValueError, match="y has one feature"):
+        _ = metric_class().evaluate_with_scaling(y, single, FeatureScaling.UNIT_NORM)
+
+
+def test_one_feature_accepts_scaling_other_than_sample_wise() -> None:
+    x: NDArray[np.float64]
+    y: NDArray[np.float64]
+    x, y = related_columns()
+    metric: ce.DistanceCorrelation = ce.DistanceCorrelation()
+    assert metric.evaluate_with_scaling(
+        x[:, 0], y[:, 0], FeatureScaling.STANDARD
+    ).statistic == pytest.approx(metric.evaluate(x[:, 0], y[:, 0]).statistic)
+
+
 def test_scaling_leaves_inputs_unchanged() -> None:
     x: NDArray[np.float64]
     y: NDArray[np.float64]

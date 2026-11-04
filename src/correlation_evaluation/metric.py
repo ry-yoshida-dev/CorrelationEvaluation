@@ -67,7 +67,9 @@ class CorrelationMetric(ABC):
         Returns
         -------
         frozenset[ScalingKind]
-            The kinds; empty when this metric takes no numeric variable.
+            The kinds; empty when this metric takes no numeric variable. Whether
+            SAMPLE_WISE applies to a multivariate variable also depends on its data:
+            `evaluate_with_scaling` rejects it for a variable with one feature.
         """
         if not cls.x_kind.is_numeric and not cls.y_kind.is_numeric:
             return frozenset()
@@ -154,8 +156,9 @@ class CorrelationMetric(ABC):
             If this metric takes no numeric variable, or if a variable has the
             wrong data type for this metric.
         ValueError
-            If this metric does not support the kind of scaling, a variable is
-            invalid as for `evaluate`, or the scaler rejects it.
+            If this metric does not support the kind of scaling, sample-wise
+            scaling is applied to a variable with one feature, a variable is invalid
+            as for `evaluate`, or the scaler rejects it.
         """
         if not self.x_kind.is_numeric and not self.y_kind.is_numeric:
             raise TypeError(
@@ -269,9 +272,12 @@ class CorrelationMetric(ABC):
         if not kind.is_numeric:
             return values
         encoded: FloatArray = kind.encode(values, name)
-        scaled: NDArray[np.floating] = scaling.build_scaler().fit_transform(
-            encoded.reshape(len(encoded), -1)
-        )
+        samples: FloatArray = encoded.reshape(len(encoded), -1)
+        if scaling.kind is ScalingKind.SAMPLE_WISE and np.size(samples, axis=1) == 1:
+            raise ValueError(
+                f"{name} has one feature, so {scaling.kind.name} scaling would leave only the sign of each value"
+            )
+        scaled: NDArray[np.floating] = scaling.build_scaler().fit_transform(samples)
         return scaled.reshape(encoded.shape)
 
     @staticmethod

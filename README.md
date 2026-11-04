@@ -134,7 +134,7 @@ print(LinConcordance.supported_scaling_kinds())  # frozenset({ScalingKind.IDENTI
 | Other metrics of one-dimensional numeric variables | ✔ | ✔ | ✔ | ✔ | ✗ |
 | Metrics of multivariate variables | ✔ | ✔ | ✔ | ✔ | ✔ |
 
-`FeatureScaling` and every parameter class of DataScaler report their kind as `kind`. Metrics of labels only take no scaling.
+`FeatureScaling` and every parameter class of DataScaler report their kind as `kind`. Metrics of labels only take no scaling. `SAMPLE_WISE` also raises `ValueError` for a multivariate variable with only one feature.
 
 ## Notes
 

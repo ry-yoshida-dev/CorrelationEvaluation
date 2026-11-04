@@ -53,8 +53,9 @@ class VariableKind(Enum):
         -------
         frozenset[ScalingKind]
             All kinds, except that sample-wise scaling would leave only the sign of
-            each NUMERIC value. Labels are not scaled, so any kind leaves them as
-            they are.
+            each NUMERIC value. A MULTIVARIATE variable with one feature has the
+            same limit, which only its data can reveal. Labels are not scaled, so
+            any kind leaves them as they are.
         """
         match self:
             case VariableKind.NUMERIC:

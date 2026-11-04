@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-10-28T21:45:38.35725Z"
+exclude-newer = "2026-10-28T21:58:51.833532Z"
 exclude-newer-span = "P7D"
 
 [[package]]
@@ -127,7 +127,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "data-scaler", git = "https://github.com/ry-yoshida-dev/DataScaler.git?rev=13edc913fa2ea4da434455b62cf448c9af66a741" },
-    { name = "numpy", specifier = ">=2.0" },
+    { name = "numpy", specifier = ">=2.2" },
     { name = "scikit-learn", specifier = ">=1.8" },
     { name = "scipy", specifier = ">=1.15" },
 ]
