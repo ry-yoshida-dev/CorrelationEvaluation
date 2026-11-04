@@ -3,7 +3,7 @@ import math
 import numpy as np
 from scipy import special, stats
 
-from ...types import FloatArray
+from ..types import FloatArray
 
 
 class BivariateNormal:

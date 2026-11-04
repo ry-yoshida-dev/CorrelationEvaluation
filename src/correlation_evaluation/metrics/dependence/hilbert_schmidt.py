@@ -4,12 +4,12 @@ from typing import ClassVar, override
 
 import numpy as np
 
+from ...computation import PairwiseDistance
 from ...metric import CorrelationMetric
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
 from ...variable_kind import VariableKind
-from .pairwise_distance import PairwiseDistance
 
 
 @dataclass(frozen=True)

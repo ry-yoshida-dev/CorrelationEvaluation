@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 
-from ...types import FloatArray
+from ..types import FloatArray
 
 
 class PairwiseDistance:

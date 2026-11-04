@@ -1,4 +1,3 @@
-from .alternative import Alternative
 from .confidence_interval import ConfidenceInterval
 from .contingency_table import ContingencyTable
 from .matrix import CorrelationMatrix
@@ -16,17 +15,13 @@ from .metrics import (
     Cosine,
     CramersV,
     DistanceCorrelation,
-    EntropyAverage,
     GoodmanKruskalGamma,
     GoodmanKruskalLambda,
     GoodmanKruskalTau,
     HilbertSchmidt,
     HoeffdingD,
     Intraclass,
-    IntraclassForm,
-    KappaWeighting,
     KendallTau,
-    KendallVariant,
     LaggedPearson,
     LinConcordance,
     Matthews,
@@ -52,6 +47,13 @@ from .metrics import (
     TschuprowT,
     WeightedTau,
     Winsorized,
+)
+from .options import (
+    Alternative,
+    EntropyAverage,
+    IntraclassForm,
+    KappaWeighting,
+    KendallVariant,
 )
 from .result import CorrelationResult
 from .variable_kind import VariableKind

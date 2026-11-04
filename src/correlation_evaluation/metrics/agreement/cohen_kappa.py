@@ -5,11 +5,11 @@ import numpy as np
 from sklearn.metrics import cohen_kappa_score
 
 from ...metric import CorrelationMetric
+from ...options import KappaWeighting
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
 from ...variable_kind import VariableKind
-from .kappa_weighting import KappaWeighting
 
 
 @dataclass(frozen=True)

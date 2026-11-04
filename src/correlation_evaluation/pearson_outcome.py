@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from ...hypothesis_outcome import HypothesisOutcome
+from .hypothesis_outcome import HypothesisOutcome
 
 
 class PearsonOutcome(HypothesisOutcome, Protocol):

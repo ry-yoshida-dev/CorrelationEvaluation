@@ -3,13 +3,13 @@ from typing import override
 
 from scipy import stats
 
-from ...alternative import Alternative
 from ...confidence_interval import ConfidenceInterval
 from ...metric import CorrelationMetric
+from ...options import Alternative
 from ...parameter_validator import ParameterValidator
+from ...pearson_outcome import PearsonOutcome
 from ...result import CorrelationResult
 from ...types import FloatArray
-from .pearson_outcome import PearsonOutcome
 
 
 @dataclass(frozen=True)

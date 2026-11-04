@@ -5,10 +5,10 @@ import numpy as np
 from data_scaler import ScalingKind
 
 from ...metric import CorrelationMetric
+from ...options import IntraclassForm
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
-from .intraclass_form import IntraclassForm
 
 
 @dataclass(frozen=True)

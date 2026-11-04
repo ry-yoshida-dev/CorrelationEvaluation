@@ -3,8 +3,8 @@ from typing import ClassVar, override
 
 from scipy import stats
 
-from ...alternative import Alternative
 from ...metric import CorrelationMetric
+from ...options import Alternative
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray

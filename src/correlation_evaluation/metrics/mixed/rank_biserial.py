@@ -3,9 +3,9 @@ from typing import ClassVar, override
 
 from scipy import stats
 
-from ...alternative import Alternative
 from ...hypothesis_outcome import HypothesisOutcome
 from ...metric import CorrelationMetric
+from ...options import Alternative
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import BoolArray, FloatArray

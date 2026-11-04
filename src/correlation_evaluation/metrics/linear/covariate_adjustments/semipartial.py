@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import ClassVar, override
 
-from ...types import FloatArray
-from .covariate_adjusted import CovariateAdjusted
+from ....types import FloatArray
+from ..covariate_adjusted import CovariateAdjusted
 
 
 @dataclass(frozen=True, eq=False)

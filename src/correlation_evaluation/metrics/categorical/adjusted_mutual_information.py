@@ -5,11 +5,11 @@ import numpy as np
 from sklearn.metrics import adjusted_mutual_info_score
 
 from ...metric import CorrelationMetric
+from ...options import EntropyAverage
 from ...parameter_validator import ParameterValidator
 from ...result import CorrelationResult
 from ...types import FloatArray
 from ...variable_kind import VariableKind
-from .entropy_average import EntropyAverage
 
 
 @dataclass(frozen=True)

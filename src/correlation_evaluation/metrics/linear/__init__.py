@@ -1,8 +1,7 @@
 from .cosine import Cosine
+from .covariate_adjustments import Partial, Semipartial
 from .lagged_pearson import LaggedPearson
-from .partial import Partial
 from .pearson import Pearson
-from .semipartial import Semipartial
 
 __all__ = [
     "Cosine",

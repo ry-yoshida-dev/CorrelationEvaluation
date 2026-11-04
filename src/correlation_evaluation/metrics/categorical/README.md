@@ -19,4 +19,3 @@ Association between categorical variables.
 | [mutual_information.py](./mutual_information.py) | `MutualInformation`, in nats. |
 | [normalized_mutual_information.py](./normalized_mutual_information.py) | `NormalizedMutualInformation`. |
 | [adjusted_mutual_information.py](./adjusted_mutual_information.py) | `AdjustedMutualInformation`, corrected for chance. |
-| [entropy_average.py](./entropy_average.py) | `EntropyAverage`, the normalizer of mutual information. |

@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 from scipy import stats
 
 from correlation_evaluation import Biserial, Polychoric, Polyserial, Tetrachoric
-from correlation_evaluation.metrics.latent.bivariate_normal import BivariateNormal
+from correlation_evaluation.computation import BivariateNormal
 
 
 def expand_table(counts: list[list[int]]) -> tuple[list[int], list[int]]:

@@ -4,12 +4,12 @@ from typing import ClassVar, override
 import numpy as np
 from scipy import optimize, stats
 
+from ...computation import BivariateNormal
 from ...contingency_table import ContingencyTable
 from ...metric import CorrelationMetric
 from ...result import CorrelationResult
 from ...types import FloatArray, IntArray
 from ...variable_kind import VariableKind
-from .bivariate_normal import BivariateNormal
 
 
 @dataclass(frozen=True)

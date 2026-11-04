@@ -2,11 +2,11 @@ import math
 from dataclasses import dataclass
 from typing import ClassVar, override
 
+from ...computation import PairwiseDistance
 from ...metric import CorrelationMetric
 from ...result import CorrelationResult
 from ...types import FloatArray
 from ...variable_kind import VariableKind
-from .pairwise_distance import PairwiseDistance
 
 
 @dataclass(frozen=True)

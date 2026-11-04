@@ -2,7 +2,7 @@
 
 ## Overview
 
-Metrics of association between two variables behind one API. Layers depend only on those listed before them: shared values and validators; `metric.py`, the base class; and `metrics/`, the concrete metrics.
+Metrics of association between two variables behind one API. Layers depend only on those listed before them: shared values, options, computations, and validators; `metric.py`, the base class; and `metrics/`, the concrete metrics.
 
 ## Components
 
@@ -10,9 +10,11 @@ Metrics of association between two variables behind one API. Layers depend only 
 |-----------|-------------|
 | [types.py](./types.py) | Type aliases. |
 | [parameter_validator.py](./parameter_validator.py) | `ParameterValidator`, runtime checks for NaN, non-integer, and non-member options. |
-| [alternative.py](./alternative.py) | `Alternative`, the hypothesis of a significance test. |
+| [options/](./options/README.md) | Enumerations that metrics take as options. |
+| [computation/](./computation/README.md) | Numerical building blocks of metrics. |
 | [confidence_interval.py](./confidence_interval.py) | `ConfidenceInterval`. |
 | [hypothesis_outcome.py](./hypothesis_outcome.py) | `HypothesisOutcome`, the result shape of backing significance tests. |
+| [pearson_outcome.py](./pearson_outcome.py) | `PearsonOutcome`, the result shape of the backing Pearson test. |
 | [result.py](./result.py) | `CorrelationResult`, the outcome for one pair of variables, also built from a test. |
 | [matrix.py](./matrix.py) | `CorrelationMatrix`, the outcomes for all pairs of columns. |
 | [variable_kind.py](./variable_kind.py) | `VariableKind`, the validation and encoding of each measurement scale. |
