@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "correlation-evaluation"
+version = "0.0.1"
+authors = [
+  { name = "Ryuto Yoshida" },
+]
+description = "Correlation, rank correlation, dependence, association, and agreement metrics behind one API, backed by SciPy and scikit-learn."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=2.0",
+    "scikit-learn>=1.8",
+    "scipy>=1.15",
+]
+
+[project.urls]
+Homepage = "https://github.com/ry-yoshida-dev/CorrelationEvaluation"
+"Bug Tracker" = "https://github.com/ry-yoshida-dev/CorrelationEvaluation/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+exclude-newer = "7 days"
+
+[tool.pyright]
+stubPath = "stubs"
+exclude = ["stubs", ".venv"]
+
+[tool.mypy]
+mypy_path = "stubs:src"
+files = ["src", "tests"]
+explicit_package_bases = true
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "src"]
+filterwarnings = ["error"]
+
+[dependency-groups]
+dev = [
+    "basedpyright",
+    "mypy",
+    "pytest",
+    "ruff",
+    "scipy-stubs",
+]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["stubs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
