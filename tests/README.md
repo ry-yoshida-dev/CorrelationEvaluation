@@ -21,8 +21,3 @@ Unit tests for the `correlation_evaluation` package: hand-computed values, agree
 | [`test_categorical.py`](test_categorical.py) | Tests for `metrics/categorical`. |
 | [`test_agreement.py`](test_agreement.py) | Tests for `metrics/agreement`. |
 
-## Examples
-
-```bash
-uv run pytest
-```
